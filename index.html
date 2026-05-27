@@ -10,7 +10,271 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ffe9b0'/></svg>">
-<link rel="stylesheet" href="css/styles.css">
+<style>
+/* ==========================================================================
+   LUNA·TRANSIT — styly. Tmavé HUD téma (Chakra Petch + IBM Plex Mono).
+   Sekce: proměnné → základ → header → layout → panely → formuláře →
+          readouty → klenba/radar → tabulka → status → alarm → pozice →
+          nav korekce → RESPONSIVE (mobil).
+   ========================================================================== */
+:root{
+  --bg:#07090c; --bg2:#0c1116; --panel:#0e141b; --panel2:#121a23;
+  --line:#1d2731; --line2:#2a3946; --txt:#c7d4dd; --dim:#6b7d8a;
+  --amber:#ff9d2f; --amber-d:#c4761c; --red:#ff4d4d;
+  --cyan:#35e0d8; --cyan-d:#1a9b95; --moon:#ffe9b0; --green:#5ee08a; --grid:#13202b;
+  --glow-cyan:0 0 12px rgba(53,224,216,.4);
+  --glow-amber:0 0 12px rgba(255,157,47,.45);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --disp:'Chakra Petch','IBM Plex Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(53,224,216,.05), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(255,157,47,.045), transparent 55%),
+    var(--bg);
+  color:var(--txt); font-family:var(--mono); font-size:13px; line-height:1.45;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:44px 44px;opacity:.35;
+  -webkit-mask-image:radial-gradient(circle at 50% 40%, #000 0%, transparent 80%);
+  mask-image:radial-gradient(circle at 50% 40%, #000 0%, transparent 80%);
+}
+.wrap{position:relative;z-index:1;max-width:1480px;margin:0 auto;padding:18px 22px 60px}
+
+/* header */
+header{
+  display:flex;align-items:center;justify-content:space-between;gap:20px;
+  padding:14px 18px;margin-bottom:18px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line2);border-radius:10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.03),0 8px 30px rgba(0,0,0,.5);
+  position:relative;overflow:hidden;
+}
+header::after{content:"";position:absolute;left:0;top:0;height:2px;width:100%;
+  background:linear-gradient(90deg,var(--amber),transparent 40%,transparent 60%,var(--cyan));opacity:.7}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{width:46px;height:46px;flex:none;position:relative}
+.logo svg{width:100%;height:100%;filter:drop-shadow(0 0 6px rgba(255,233,176,.5))}
+h1{font-family:var(--disp);font-weight:700;font-size:21px;letter-spacing:3px;color:#fff;line-height:1}
+h1 span{color:var(--amber)}
+.sub{font-size:10.5px;color:var(--dim);letter-spacing:2px;margin-top:5px;text-transform:uppercase}
+.clock{text-align:right;font-family:var(--disp)}
+.clock .t{font-size:22px;font-weight:600;color:var(--cyan);letter-spacing:2px;text-shadow:var(--glow-cyan)}
+.clock .d{font-size:10px;color:var(--dim);letter-spacing:2px;margin-top:3px}
+
+/* layout */
+.grid{display:grid;grid-template-columns:320px 1fr 360px;gap:16px;align-items:start}
+@media(max-width:1180px){.grid{grid-template-columns:1fr 1fr}.col-mid{grid-column:1/-1;order:-1}}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.col-mid{order:0}}
+
+.panel{
+  background:linear-gradient(180deg,var(--panel),var(--bg2));
+  border:1px solid var(--line);border-radius:10px;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);margin-bottom:16px;overflow:hidden;
+}
+.panel-h{
+  display:flex;align-items:center;gap:9px;padding:10px 14px;border-bottom:1px solid var(--line);
+  font-family:var(--disp);font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--amber);
+  background:linear-gradient(180deg,rgba(255,157,47,.06),transparent);
+}
+.panel-h .dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:var(--glow-amber);flex:none}
+.panel-b{padding:14px}
+
+/* form */
+label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--dim);margin:0 0 5px}
+.field{margin-bottom:13px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],input[type=number],select{
+  width:100%;background:#070b0f;border:1px solid var(--line2);border-radius:6px;
+  color:var(--cyan);font-family:var(--mono);font-size:16px;padding:10px;outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+input:focus,select:focus{border-color:var(--cyan-d);box-shadow:0 0 0 3px rgba(53,224,216,.12)}
+input[type=range]{width:100%;accent-color:var(--amber);height:24px;margin-top:4px;touch-action:none}
+.rng-val{float:right;color:var(--amber);font-weight:600}
+.btn{
+  width:100%;border:1px solid var(--amber-d);border-radius:7px;cursor:pointer;
+  background:linear-gradient(180deg,rgba(255,157,47,.18),rgba(255,157,47,.06));
+  color:var(--amber);font-family:var(--disp);font-weight:600;font-size:13px;letter-spacing:2px;
+  padding:12px;text-transform:uppercase;transition:.15s;
+}
+.btn:hover{background:rgba(255,157,47,.26);box-shadow:var(--glow-amber)}
+.btn.go{margin-top:4px}
+.btn.ghost{border-color:var(--line2);background:transparent;color:var(--dim);font-size:11px;padding:11px;letter-spacing:1.5px}
+.btn.ghost:hover{color:var(--cyan);border-color:var(--cyan-d);box-shadow:none}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.seg{display:flex;flex-wrap:wrap;border:1px solid var(--line2);border-radius:7px;overflow:hidden;margin-top:4px}
+.seg button{flex:1 1 auto;min-width:90px;background:transparent;border:none;color:var(--dim);
+  font-family:var(--mono);font-size:11px;padding:11px 8px;cursor:pointer;letter-spacing:1px;transition:.15s}
+.seg button.on{background:var(--cyan);color:#03110f;font-weight:600}
+.seg button:not(.on):hover{color:var(--cyan)}
+
+/* readouts */
+.ro{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line)}
+.ro:last-child{border-bottom:none}
+.ro .k{font-size:10.5px;color:var(--dim);letter-spacing:1px;text-transform:uppercase}
+.ro .v{font-family:var(--disp);font-size:15px;color:var(--txt);font-weight:600}
+.ro .v.cy{color:var(--cyan)}.ro .v.am{color:var(--amber)}
+.ro .v small{font-size:10px;color:var(--dim);font-weight:400}
+
+/* sky dome + radar */
+.col-mid .panel{margin-bottom:16px}
+.skywrap{display:flex;justify-content:center;padding:6px}
+#sky{width:100%;max-width:560px;height:auto;display:block}
+.domefoot{display:flex;justify-content:space-around;padding:10px 14px;border-top:1px solid var(--line);flex-wrap:wrap;gap:8px}
+.leg{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--dim);letter-spacing:1px}
+.leg i{width:11px;height:11px;border-radius:50%;display:inline-block}
+#radar{width:100%;max-width:560px;height:auto;display:block;margin:0 auto}
+
+/* zone readout */
+.zrow{display:flex;justify-content:space-between;padding:4px 0}
+.zrow.ztot{padding:6px 0;border-top:1px solid var(--line2);margin-top:4px}
+.corridor-info{font-size:11px;line-height:1.7}
+.corridor-info .lbl{color:var(--dim)}
+.corridor-info .num,.zrow .num{color:var(--amber);font-family:var(--disp);font-weight:600}
+.zrow .lbl{color:var(--dim)}
+
+/* transit table */
+.tbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.tbl th{text-align:left;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;color:var(--dim);
+  padding:8px 6px;border-bottom:1px solid var(--line2);font-weight:500;position:sticky;top:0;background:var(--panel)}
+.tbl td{padding:9px 6px;border-bottom:1px solid var(--line)}
+.tbl tr.hit td{background:rgba(94,224,138,.07)}
+.tbl tr.imminent td{background:rgba(255,77,77,.1)}
+.tbl .cs{font-family:var(--disp);font-weight:600;color:var(--cyan);letter-spacing:1px}
+.tbl .sep{font-weight:600}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;letter-spacing:1px;font-weight:600;text-transform:uppercase}
+.badge.hit{background:rgba(94,224,138,.18);color:var(--green);border:1px solid rgba(94,224,138,.4)}
+.badge.near{background:rgba(255,157,47,.16);color:var(--amber);border:1px solid rgba(255,157,47,.35)}
+.badge.now{background:var(--red);color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.empty{padding:30px 14px;text-align:center;color:var(--dim);font-size:11.5px;letter-spacing:1px}
+.scrolly{max-height:330px;overflow-y:auto}
+.scrolly::-webkit-scrollbar{width:8px}.scrolly::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.tbl tr.selrow td{background:rgba(255,157,47,.14)!important;box-shadow:inset 3px 0 0 var(--amber)}
+
+/* status bar */
+.statusbar{display:flex;align-items:center;gap:18px;flex-wrap:wrap;padding:10px 16px;margin-bottom:16px;
+  background:var(--panel);border:1px solid var(--line);border-radius:9px;font-size:11px;letter-spacing:1px}
+.st{display:flex;align-items:center;gap:7px;color:var(--dim)}
+.st b{color:var(--txt);font-family:var(--disp);font-weight:600}
+.pill{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.pill.live{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.6s infinite}
+.pill.demo{background:var(--amber);box-shadow:var(--glow-amber)}
+.pill.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+.spacer{flex:1}
+.countdown{font-family:var(--disp);color:var(--cyan);font-weight:600}
+
+.note{font-size:10.5px;color:var(--dim);line-height:1.6;letter-spacing:.3px}
+.note b{color:var(--amber)}
+.warn{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.3);border-radius:7px;
+  padding:10px 12px;color:#ffb3b3;font-size:11px;line-height:1.5;margin-top:10px;display:none}
+.warn.show{display:block}
+a{color:var(--cyan)}
+code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:1px 5px;color:var(--cyan);font-size:10.5px}
+
+/* alarm overlay */
+#alarm{display:none;position:fixed;inset:0;z-index:9999;background:rgba(4,8,12,.92);
+  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;flex-direction:column;gap:18px;padding:16px}
+#alarm.show{display:flex;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.alarm-box{border:2px solid var(--red);border-radius:16px;background:linear-gradient(180deg,#130608,#0a0305);
+  box-shadow:0 0 60px rgba(255,77,77,.4),0 0 120px rgba(255,77,77,.15);
+  padding:36px 48px;text-align:center;max-width:520px;width:100%;animation:alarmPulse 1s ease-in-out infinite}
+@keyframes alarmPulse{0%,100%{box-shadow:0 0 40px rgba(255,77,77,.4)}50%{box-shadow:0 0 80px rgba(255,77,77,.7),0 0 160px rgba(255,77,77,.2)}}
+.alarm-icon{font-size:52px;line-height:1;margin-bottom:12px;animation:spin .8s linear infinite}
+@keyframes spin{0%{transform:rotate(-15deg)}50%{transform:rotate(15deg)}100%{transform:rotate(-15deg)}}
+.alarm-title{font-family:var(--disp);font-size:28px;font-weight:700;color:var(--red);letter-spacing:4px;text-transform:uppercase;margin-bottom:8px}
+.alarm-cs{font-family:var(--disp);font-size:20px;color:#fff;letter-spacing:3px;margin-bottom:6px}
+.alarm-detail{font-size:12px;color:#ffb3b3;letter-spacing:1.5px;line-height:1.8;margin-bottom:24px}
+.alarm-dismiss{background:var(--red);border:none;border-radius:10px;color:#fff;cursor:pointer;
+  font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:3px;padding:14px 40px;text-transform:uppercase;
+  transition:.15s;box-shadow:0 4px 20px rgba(255,77,77,.5)}
+.alarm-dismiss:hover{background:#ff2020;box-shadow:0 4px 30px rgba(255,77,77,.8)}
+.alarm-mute{background:transparent;border:1px solid #5a2020;border-radius:8px;color:#ff8080;cursor:pointer;
+  font-family:var(--mono);font-size:11px;letter-spacing:1px;padding:10px 20px;margin-top:10px;transition:.15s}
+.alarm-mute:hover{border-color:var(--red);color:#fff}
+
+/* saved positions */
+.pos-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:180px;overflow-y:auto}
+.pos-list::-webkit-scrollbar{width:6px}.pos-list::-webkit-scrollbar-thumb{background:var(--line2);border-radius:3px}
+.pos-item{display:flex;align-items:center;gap:7px;padding:10px;background:#08111a;border:1px solid var(--line);border-radius:7px;transition:.12s;cursor:pointer}
+.pos-item:hover{border-color:var(--cyan-d);background:#0b1822}
+.pos-name{flex:1;font-family:var(--disp);font-size:12px;letter-spacing:1px;color:var(--cyan)}
+.pos-coords{font-size:9.5px;color:var(--dim);letter-spacing:.5px}
+.pos-del{background:transparent;border:none;color:#5a2020;cursor:pointer;font-size:18px;padding:4px 8px;line-height:1;border-radius:4px;transition:.1s}
+.pos-del:hover{color:var(--red);background:rgba(255,77,77,.1)}
+.pos-empty{font-size:11px;color:var(--dim);text-align:center;padding:12px;letter-spacing:1px}
+.notif-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+.notif-status{font-size:10px;color:var(--dim);flex:1;letter-spacing:1px}
+.notif-status.ok{color:var(--green)}.notif-status.err{color:var(--amber)}
+
+/* radar tooltip */
+#radarTip{position:fixed;z-index:5000;pointer-events:none;display:none;background:#0a131b;border:1px solid var(--cyan-d);
+  border-radius:7px;padding:7px 10px;font-family:var(--mono);font-size:11px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.6);min-width:120px}
+#radarTip .rt-cs{font-family:var(--disp);font-weight:600;color:var(--cyan);letter-spacing:1px;margin-bottom:3px}
+#radarTip .rt-row{color:var(--dim)}#radarTip .rt-row b{color:var(--txt);float:right;margin-left:14px}
+
+/* toggle switch */
+.switch{position:relative;display:inline-block;width:42px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;inset:0;background:#1d2731;border:1px solid var(--line2);border-radius:24px;transition:.2s}
+.slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:var(--dim);border-radius:50%;transition:.2s}
+.switch input:checked+.slider{background:rgba(255,157,47,.25);border-color:var(--amber-d)}
+.switch input:checked+.slider:before{transform:translateX(18px);background:var(--amber);box-shadow:0 0 6px var(--amber)}
+
+/* nav correction cards */
+.nav-card{background:#0a1119;border:1px solid var(--line2);border-radius:9px;padding:11px 12px;margin-bottom:9px}
+.nav-card.tight{border-color:var(--green);box-shadow:0 0 0 1px rgba(94,224,138,.2)}
+.nav-card .nc-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.nav-card .nc-cs{font-family:var(--disp);font-weight:600;font-size:14px;color:var(--cyan);letter-spacing:1px}
+.nav-card .nc-miss{font-size:10px;color:var(--dim);letter-spacing:1px}
+.nav-card .nc-main{display:flex;align-items:center;gap:12px}
+.nav-arrow{flex:none;width:44px;height:44px;position:relative}
+.nav-arrow svg{width:100%;height:100%}
+.nav-figs{flex:1}
+.nav-figs .nf-dist{font-family:var(--disp);font-size:22px;font-weight:700;color:var(--amber);line-height:1}
+.nav-figs .nf-dir{font-size:11px;color:var(--txt);letter-spacing:1px;margin-top:3px}
+.nav-figs .nf-gps{font-size:9.5px;color:var(--dim);margin-top:4px;font-family:var(--mono);letter-spacing:.3px}
+.nav-card .nc-foot{display:flex;justify-content:space-between;margin-top:8px;font-size:9.5px;color:var(--dim);letter-spacing:.5px}
+.nav-card .nc-foot b{color:var(--green)}
+.nav-card.disabled-look{opacity:.5}
+
+/* ==========================================================================
+   RESPONSIVE — mobil / tablet
+   ========================================================================== */
+@media(max-width:760px){
+  .wrap{padding:12px 12px 48px}
+  header{flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px}
+  .clock{text-align:left;align-self:flex-start}
+  .clock .t{font-size:18px}
+  h1{font-size:18px;letter-spacing:2px}
+  .statusbar{gap:10px 14px;font-size:10px;padding:9px 12px}
+  .grid{gap:12px}
+  .panel{margin-bottom:12px}
+  .panel-h{font-size:10px;letter-spacing:1.8px;padding:10px 12px}
+  .panel-b{padding:12px}
+  /* zarovnání pořadí: mapa nad ovládáním ať je hned vidět */
+  .col-mid{order:-1}
+  .scrolly{max-height:50vh}
+}
+@media(max-width:420px){
+  .row2{grid-template-columns:1fr}
+  .btn-row{grid-template-columns:1fr}
+  h1{font-size:16px}
+  .alarm-box{padding:28px 22px}
+  .alarm-title{font-size:22px;letter-spacing:3px}
+}
+/* jemné doladění pro velmi široké obrazovky */
+@media(min-width:1600px){.wrap{max-width:1600px}}
+
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -260,6 +524,1250 @@
 
 </div>
 
-<script type="module" src="js/app.js"></script>
+<script>
+/* === BUNDLED LUNA·TRANSIT — single-file build === */
+
+
+/* ============ js/config.js ============ */
+// ============================================================================
+//  config.js — Centrální konfigurace aplikace LUNA·TRANSIT
+//  Vše, co se typicky ladí nebo rozšiřuje, je na jednom místě.
+// ============================================================================
+
+// Fyzikální konstanty
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
+const EARTH_R = 6371008.8; // střední poloměr Země [m]
+
+// localStorage klíče
+const LS = {
+  positions: 'lunar_transit_positions_v2',
+  settings:  'lunar_transit_settings_v2',
+};
+
+// Dostupné datové zdroje letadel.
+// Pro přidání dalšího zdroje (kompatibilního s ADSBExchange v2 formátem)
+// stačí přidat položku sem — UI tlačítko se vygeneruje automaticky.
+const DATA_SOURCES = [
+  {
+    id:    'live',
+    label: 'LIVE · airplanes.live',
+    // {lat} {lon} {radius} se nahradí; radius je v námořních mílích
+    url:   'https://api.airplanes.live/v2/point/{lat}/{lon}/{radius}',
+    note:  'Veřejné API, bez klíče. Limit ~1 dotaz/s.',
+  },
+  {
+    id:    'adsbone',
+    label: 'LIVE · adsb.one',
+    url:   'https://api.adsb.one/v2/point/{lat}/{lon}/{radius}',
+    note:  'Záložní zrcadlo (stejný formát).',
+  },
+  {
+    id:    'demo',
+    label: 'SIMULACE',
+    url:   null, // syntetická data
+    note:  'Lokální syntetický provoz pro test logiky (jedno letadlo projde kotoučem).',
+  },
+];
+
+// Výchozí hodnoty (přepíší se uloženým nastavením návštěvníka)
+const DEFAULTS = {
+  lat: 50.0755,
+  lon: 14.4378,
+  elev: 200,
+  horizonMin: 20,     // výhled do budoucna [min]
+  stepSec: 5,         // krok výpočtu [s]
+  tolPct: 25,         // tolerance 0..100 → 0..1.0°
+  hmin: 600,          // min. hladina [m]
+  hmax: 13000,        // max. hladina [m]
+  vmax: 950,          // max. rychlost [km/h]
+  source: 'live',
+  proxy: '',
+  pollMs: 5000,       // interval dotazu na data [ms] (min 1000 dle limitu API)
+  refreshMs: 1000,    // interval přepočtu + vykreslení [ms]
+  alarmVol: 70,
+  alarmThSec: 120,
+  minSkyEl: 5,        // pod touto elevací se nezobrazují nekandidátní letadla
+};
+
+// Hranice ovládacích prvků
+const LIMITS = {
+  pollMs:    { min: 1000, max: 30000, step: 1000 },
+  refreshMs: { min: 250,  max: 5000,  step: 250 },
+};
+
+
+/* ============ js/astro.js ============ */
+// ============================================================================
+//  astro.js — Astronomie: poloha Měsíce (Schlyter, topocentricky), Slunce, čas
+//  Přesnost polohy Měsíce ~1′ (zkrácená lunární teorie + paralaxa).
+// ============================================================================
+
+const rev   = x => { x = x % 360; return x < 0 ? x + 360 : x; };
+const sind  = x => Math.sin(x * D2R);
+const cosd  = x => Math.cos(x * D2R);
+const tand  = x => Math.tan(x * D2R);
+const asind = x => Math.asin(Math.max(-1, Math.min(1, x))) * R2D;
+const atan2d = (y, x) => Math.atan2(y, x) * R2D;
+
+// Dní od 2000 Jan 0.0 (= 1999-12-31 00:00 UT)
+function dayNumber(date) {
+  return date.getTime() / 86400000 - 10957.5;
+}
+
+// Geocentrická poloha Měsíce → RA/Dec + vzdálenost (v poloměrech Země)
+function moonGeo(d) {
+  const N = rev(125.1228 - 0.0529538083 * d);
+  const i = 5.1454;
+  const w = rev(318.0634 + 0.1643573223 * d);
+  const a = 60.2666;
+  const e = 0.054900;
+  const M = rev(115.3654 + 13.0649929509 * d);
+  // Keplerova rovnice
+  let E = M + R2D * e * sind(M) * (1 + e * cosd(M));
+  for (let k = 0; k < 6; k++) {
+    E = E - (E - R2D * e * sind(E) - M) / (1 - e * cosd(E));
+  }
+  const xv = a * (cosd(E) - e), yv = a * Math.sqrt(1 - e * e) * sind(E);
+  const v = atan2d(yv, xv);
+  let r = Math.sqrt(xv * xv + yv * yv);
+  const xe = r * (cosd(N) * cosd(v + w) - sind(N) * sind(v + w) * cosd(i));
+  const ye = r * (sind(N) * cosd(v + w) + cosd(N) * sind(v + w) * cosd(i));
+  const ze = r * (sind(v + w) * sind(i));
+  let lon = atan2d(ye, xe), lat = atan2d(ze, Math.sqrt(xe * xe + ye * ye));
+  // Slunce — pro poruchy + siderický čas
+  const ws = 282.9404 + 4.70935e-5 * d, Ms = rev(356.0470 + 0.9856002585 * d);
+  const Ls = rev(ws + Ms);
+  const Lm = rev(N + w + M);
+  const Dm = rev(Lm - Ls);
+  const F  = rev(Lm - N);
+  // Poruchy v délce (°)
+  lon += -1.274 * sind(M - 2 * Dm) + 0.658 * sind(2 * Dm) - 0.186 * sind(Ms)
+       - 0.059 * sind(2 * M - 2 * Dm) - 0.057 * sind(M - 2 * Dm + Ms) + 0.053 * sind(M + 2 * Dm)
+       + 0.046 * sind(2 * Dm - Ms) + 0.041 * sind(M - Ms) - 0.035 * sind(Dm)
+       - 0.031 * sind(M + Ms) - 0.015 * sind(2 * F - 2 * Dm) + 0.011 * sind(M - 4 * Dm);
+  // Poruchy v šířce (°)
+  lat += -0.173 * sind(F - 2 * Dm) - 0.055 * sind(M - F - 2 * Dm) - 0.046 * sind(M + F - 2 * Dm)
+       + 0.033 * sind(F + 2 * Dm) + 0.017 * sind(2 * M + F);
+  // Porucha vzdálenosti
+  r += -0.58 * cosd(M - 2 * Dm) - 0.46 * cosd(2 * Dm);
+  // Ekliptika → rovník
+  const ecl = 23.4393 - 3.563e-7 * d;
+  const xg = cosd(lon) * cosd(lat), yg = sind(lon) * cosd(lat), zg = sind(lat);
+  const xq = xg, yq = yg * cosd(ecl) - zg * sind(ecl), zq = yg * sind(ecl) + zg * cosd(ecl);
+  const RA = rev(atan2d(yq, xq)), Dec = asind(zq);
+  return { RA, Dec, r, Ls, lon, Dm };
+}
+
+function sunLon(d) {
+  const ws = 282.9404 + 4.70935e-5 * d, Ms = rev(356.0470 + 0.9856002585 * d), e = 0.016709 - 1.151e-9 * d;
+  const E = Ms + R2D * e * sind(Ms) * (1 + e * cosd(Ms));
+  const xv = cosd(E) - e, yv = Math.sqrt(1 - e * e) * sind(E);
+  const v = atan2d(yv, xv);
+  return rev(v + ws);
+}
+
+const PHASE_NAMES = [
+  'Nov', 'Dorůstající srpek', 'První čtvrť', 'Dorůstající měsíc',
+  'Úplněk', 'Couvající měsíc', 'Poslední čtvrť', 'Couvající srpek',
+];
+function moonPhaseName(ang) {
+  return PHASE_NAMES[Math.round(rev(ang) / 45) % 8];
+}
+
+// Topocentrická poloha Měsíce (az/el) z pozorovacího místa
+function moonTopo(date, latO, lonO) {
+  const d = dayNumber(date);
+  const g = moonGeo(d);
+  const UT = date.getUTCHours() + date.getUTCMinutes() / 60 +
+             date.getUTCSeconds() / 3600 + date.getUTCMilliseconds() / 3.6e6;
+  const GMST0 = rev(g.Ls + 180);
+  const LST = rev(GMST0 + UT * 15 + lonO);
+  let HA = rev(LST - g.RA); if (HA > 180) HA -= 360;
+
+  // Topocentrická korekce (paralaxa)
+  const mpar  = asind(1 / g.r);                 // horizontální paralaxa (~0.95°)
+  const gclat = latO - 0.1924 * sind(2 * latO);
+  const rho   = 0.99833 + 0.00167 * cosd(2 * latO);
+  const gAux  = atan2d(tand(gclat), cosd(HA));
+  const topRA = g.RA - mpar * rho * cosd(gclat) * sind(HA) / cosd(g.Dec);
+  let topDec;
+  if (Math.abs(sind(gAux)) < 1e-6) {
+    // Ochrana proti dělení nulou poblíž rovníku / krajních HA
+    topDec = g.Dec - mpar * rho * sind(gclat) * cosd(HA);
+  } else {
+    topDec = g.Dec - mpar * rho * sind(gclat) * sind(gAux - g.Dec) / sind(gAux);
+  }
+  let HA2 = rev(LST - topRA); if (HA2 > 180) HA2 -= 360;
+
+  const sinEl = sind(latO) * sind(topDec) + cosd(latO) * cosd(topDec) * cosd(HA2);
+  const el = asind(sinEl);
+  let az = atan2d(sind(HA2), cosd(HA2) * sind(latO) - tand(topDec) * cosd(latO));
+  az = rev(az + 180);
+
+  const diam = 2 * asind(0.2725 * (1 / g.r));   // úhlový průměr Měsíce (°)
+  const phaseAng = rev(g.lon - sunLon(d));      // 0=nov, 180=úplněk
+  const elong = Math.acos(Math.max(-1, Math.min(1, cosd(phaseAng)))) * R2D;
+  const phaseFrac = (1 - Math.cos(elong * D2R)) / 2;
+  const waxing = phaseAng < 180;
+
+  return {
+    az, el, diam,
+    distER: g.r, distKm: g.r * EARTH_R / 1000,
+    phaseFrac, phaseName: moonPhaseName(phaseAng), phaseAng, waxing, HA: HA2,
+  };
+}
+
+// Nejbližší budoucí východ/západ Měsíce
+function nextMoonEvent(now, lat, lon) {
+  const h0 = -0.83, t0 = now.getTime();
+  const elAt = ms => moonTopo(new Date(ms), lat, lon).el - h0;
+  let prev = elAt(t0);
+  for (let m = 5; m <= 1500; m += 5) {
+    const e = elAt(t0 + m * 60000);
+    if ((prev < 0) !== (e < 0)) {
+      let lo = m - 5, hi = m, flo = elAt(t0 + lo * 60000);
+      for (let k = 0; k < 20; k++) {
+        const mid = (lo + hi) / 2, fm = elAt(t0 + mid * 60000);
+        if ((flo < 0) !== (fm < 0)) hi = mid; else { lo = mid; flo = fm; }
+      }
+      const mins = (lo + hi) / 2;
+      return { rising: elAt(t0 + hi * 60000) > 0, mins, when: new Date(t0 + mins * 60000) };
+    }
+    prev = e;
+  }
+  return null;
+}
+
+
+/* ============ js/geo.js ============ */
+// ============================================================================
+//  geo.js — Geometrie: poloha letadla → az/el, posun po dráze, úhlový odstup
+// ============================================================================
+
+
+function ecef(lat, lon, h) {
+  const r = EARTH_R + h;
+  return [r * cosd(lat) * cosd(lon), r * cosd(lat) * sind(lon), r * sind(lat)];
+}
+
+// Az/el letadla z místa pozorovatele (sférická Země, zahrnuje zakřivení)
+function aircraftAzEl(latO, lonO, hO, lat, lon, h) {
+  const o = ecef(latO, lonO, hO), p = ecef(lat, lon, h);
+  const dx = p[0] - o[0], dy = p[1] - o[1], dz = p[2] - o[2];
+  const e = -sind(lonO) * dx + cosd(lonO) * dy;
+  const n = -sind(latO) * cosd(lonO) * dx - sind(latO) * sind(lonO) * dy + cosd(latO) * dz;
+  const u =  cosd(latO) * cosd(lonO) * dx + cosd(latO) * sind(lonO) * dy + sind(latO) * dz;
+  const az = rev(atan2d(e, n));
+  const el = atan2d(u, Math.sqrt(e * e + n * n));
+  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  return { az, el, dist };
+}
+
+// Cílový bod ve vzdálenosti dist (m) a azimutu brg (°) od (lat,lon)
+function dest(lat, lon, brg, dist) {
+  const dr = dist / EARTH_R, la1 = lat * D2R, b = brg * D2R, lo1 = lon * D2R;
+  const la2 = Math.asin(Math.sin(la1) * Math.cos(dr) + Math.cos(la1) * Math.sin(dr) * Math.cos(b));
+  const lo2 = lo1 + Math.atan2(Math.sin(b) * Math.sin(dr) * Math.cos(la1),
+                               Math.cos(dr) - Math.sin(la1) * Math.sin(la2));
+  return [la2 * R2D, ((lo2 * R2D + 540) % 360) - 180];
+}
+
+// Úhlový odstup dvou bodů na obloze (az/el ve °)
+function angSep(az1, el1, az2, el2) {
+  const c = sind(el1) * sind(el2) + cosd(el1) * cosd(el2) * cosd(az1 - az2);
+  return Math.acos(Math.max(-1, Math.min(1, c))) * R2D;
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const dla = (lat2 - lat1) * D2R, dlo = (lon2 - lon1) * D2R;
+  const a = Math.sin(dla / 2) ** 2 + cosd(lat1) * cosd(lat2) * Math.sin(dlo / 2) ** 2;
+  return EARTH_R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function bearing(lat1, lon1, lat2, lon2) {
+  const dLon = (lon2 - lon1) * D2R;
+  const y = Math.sin(dLon) * cosd(lat2);
+  const x = cosd(lat1) * sind(lat2) - sind(lat1) * cosd(lat2) * Math.cos(dLon);
+  return rev(atan2d(y, x));
+}
+
+// Světová strana zkratkou (česky)
+const COMPASS = ['S', 'SSV', 'SV', 'VSV', 'V', 'VJV', 'JV', 'JJV',
+                 'J', 'JJZ', 'JZ', 'ZJZ', 'Z', 'ZSZ', 'SZ', 'SSZ'];
+function compass(b) {
+  return COMPASS[Math.round(rev(b) / 22.5) % 16];
+}
+
+
+/* ============ js/prediction.js ============ */
+// ============================================================================
+//  prediction.js — Predikce přeletů, zóna dotazu, naváděcí korekce
+//  KLÍČOVÁ OPTIMALIZACE: poloha Měsíce v každém kroku se počítá JEDNOU
+//  (buildMoonTrack) a sdílí se napříč všemi letadly — místo N×kroků volání.
+// ============================================================================
+
+
+// Extrapolovaná poloha letadla v čase (teď + tSecFuture) z kotvy fixace.
+// fetchClientMs = klientský čas přijetí snímku (kotva dead reckoningu).
+function acPosAt(a, tSecFuture, fetchClientMs) {
+  const dt = (a.seenPos || 0) + (Date.now() - fetchClientMs) / 1000 + (tSecFuture || 0);
+  const [la, lo] = dest(a.lat0, a.lon0, a.trk, a.gsMs * dt);
+  const alt = Math.max(0, a.alt0 + a.vrMs * dt);
+  return { lat: la, lon: lo, altM: alt, dt };
+}
+
+// Předpočítaná efemerida Měsíce přes celý výhled (sdílená pro všechna letadla)
+function buildMoonTrack(nowMs, obs, horizonSec, stepSec) {
+  const track = [];
+  for (let t = 0; t <= horizonSec; t += stepSec) {
+    const m = moonTopo(new Date(nowMs + t * 1000), obs.lat, obs.lon);
+    track.push({ t, az: m.az, el: m.el, diam: m.diam });
+  }
+  return track;
+}
+
+// Pro jedno letadlo najdi krok s minimálním úhlovým odstupem od Měsíce.
+function predict(a, obs, track, fetchClientMs) {
+  let best = { sep: 1e9, t: 0, az: 0, el: 0, la: null, lo: null, alt: 0,
+               mAz: 0, mEl: 0, diam: 0.52, predEl: -99 };
+  for (let i = 0; i < track.length; i++) {
+    const mt = track[i];
+    if (mt.el < 0) continue;
+    const p = acPosAt(a, mt.t, fetchClientMs);
+    const ae = aircraftAzEl(obs.lat, obs.lon, obs.h, p.lat, p.lon, p.altM);
+    if (ae.el < 0) continue;
+    const sep = angSep(ae.az, ae.el, mt.az, mt.el);
+    if (sep < best.sep) {
+      best = { sep, t: mt.t, az: ae.az, el: ae.el, la: p.lat, lo: p.lon,
+               alt: p.altM, mAz: mt.az, mEl: mt.el, diam: mt.diam };
+    }
+  }
+  return best;
+}
+
+// Zóna dotazu — kde hledat letadla (jen relevantní výsek oblohy)
+function computeZone(now, latO, lonO, hO, hmin, hmax, horizonMin, vmaxKmh, tolDeg) {
+  const t0 = moonTopo(now, latO, lonO);
+  const t1 = moonTopo(new Date(now.getTime() + horizonMin * 60000), latO, lonO);
+  const elMin = Math.max(0.5, Math.min(t0.el, t1.el));
+  const elMax = Math.max(t0.el, t1.el);
+  const azMid = (() => {
+    let a = t0.az, b = t1.az;
+    if (Math.abs(a - b) > 180) { if (a < b) a += 360; else b += 360; }
+    return rev((a + b) / 2);
+  })();
+  const dNear = hmin / tand(elMax);
+  const dFar  = hmax / tand(elMin);
+  const dMid  = (dNear + dFar) / 2;
+  const reach = vmaxKmh * 1000 / 3600 * horizonMin * 60;
+  const center = dest(latO, lonO, azMid, dMid);
+  const radius = (dFar - dNear) / 2 + reach + dMid * tand(t0.diam / 2 + tolDeg) + 2000;
+  return {
+    center, radius, azMid, dNear, dFar, dMid, reach,
+    elMin, elMax, moonEl: t0.el, moonAz: t0.az, diam: t0.diam, valid: t0.el > 0.5,
+  };
+}
+
+// Naváděcí korekce — kam se přesunout, abych zachytil přelet (2D minimalizace).
+function correctionFor(a, obs, fetchClientMs) {
+  if (a.sep == null || a.sep > 2.0 || a.tHit == null) return null;
+  const A = { lat: a.predLa, lon: a.predLo, alt: a.altM };
+  if (A.lat == null) return null;
+  const mt = moonTopo(new Date(Date.now() + a.tHit * 1000), obs.lat, obs.lon);
+  if (mt.el <= 0) return null;
+  const cosLat = cosd(obs.lat);
+  const evalSep = (de, dn) => {
+    const dlat = dn / 111320, dlon = de / (111320 * cosLat);
+    const ae = aircraftAzEl(obs.lat + dlat, obs.lon + dlon, obs.h, A.lat, A.lon, A.alt);
+    return angSep(ae.az, ae.el, mt.az, mt.el);
+  };
+  let best = { sep: 9, de: 0, dn: 0 };
+  for (let de = -2000; de <= 2000; de += 40)
+    for (let dn = -2000; dn <= 2000; dn += 40) {
+      const s = evalSep(de, dn); if (s < best.sep) best = { sep: s, de, dn };
+    }
+  for (let de = best.de - 40; de <= best.de + 40; de += 4)
+    for (let dn = best.dn - 40; dn <= best.dn + 40; dn += 4) {
+      const s = evalSep(de, dn); if (s < best.sep) best = { sep: s, de, dn };
+    }
+  const dlat = best.dn / 111320, dlon = best.de / (111320 * cosLat);
+  const dist = Math.hypot(best.de, best.dn);
+  const brg = rev(atan2d(best.de, best.dn));
+  return {
+    tgtLat: obs.lat + dlat, tgtLon: obs.lon + dlon,
+    dist, brg, residSep: best.sep, tHit: a.tHit, origSep: a.sep,
+  };
+}
+
+
+/* ============ js/data.js ============ */
+// ============================================================================
+//  data.js — Datové zdroje: živé API (airplanes.live / adsb.one) + simulace
+// ============================================================================
+
+
+
+function sourceById(id) {
+  return DATA_SOURCES.find(s => s.id === id) || DATA_SOURCES[0];
+}
+
+// Normalizace záznamu z ADSBExchange-v2 kompatibilního API
+function mapAircraft(a) {
+  const altFt = (a.alt_baro === 'ground' ? 0 : (a.alt_baro ?? a.alt_geom ?? 0));
+  return {
+    cs:   (a.flight || a.r || a.hex || '?').trim(),
+    lat0: a.lat, lon0: a.lon, alt0: altFt * 0.3048,   // kotva = poloha v čase fixace
+    trk:  a.track ?? a.true_heading ?? 0,
+    gsMs: (a.gs ?? 0) * 0.514444,
+    vrMs: ((a.baro_rate ?? a.geom_rate ?? 0)) * 0.3048 / 60,
+    seenPos: (a.seen_pos ?? a.seen ?? 0),             // stáří fixace [s]
+  };
+}
+
+// Živé API. Záměrně NEpoužíváme custom hlavičky → "simple request" bez CORS preflightu.
+async function fetchLive(sourceId, obs, zone, proxy) {
+  const src = sourceById(sourceId);
+  const radiusNm = Math.min(250, Math.ceil(zone.radius / 1852) + 5);
+  const c = zone.center;
+  let url = src.url
+    .replace('{lat}', c[0].toFixed(4))
+    .replace('{lon}', c[1].toFixed(4))
+    .replace('{radius}', radiusNm);
+  if (proxy) url = proxy + encodeURIComponent(url);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const j = await res.json();
+  const list = j.ac || j.aircraft || [];
+  return list
+    .filter(a => a.lat && a.lon && (a.alt_baro || a.alt_geom))
+    .map(mapAircraft);
+}
+
+// Horizontální vzdálenost, kde má letadlo ve výšce h přesně elevaci targetEl
+function solveDist(obs, h, brg, targetEl) {
+  let lo = 1000, hi = 500000;
+  for (let i = 0; i < 44; i++) {
+    const mid = (lo + hi) / 2;
+    const p = dest(obs.lat, obs.lon, brg, mid);
+    const ae = aircraftAzEl(obs.lat, obs.lon, obs.h, p[0], p[1], h);
+    if (ae.el > targetEl) lo = mid; else hi = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// Simulace — perzistentní flotila; jedno letadlo přesně míří přes kotouč.
+function makeDemoFleet(obs, zone, now) {
+  const fleet = [];
+  if (zone && zone.valid) {
+    const tCross = 95, h = 10500;
+    const mF = moonTopo(new Date(now.getTime() + tCross * 1000), obs.lat, obs.lon);
+    const dCross = solveDist(obs, h, mF.az, mF.el);
+    const CP = dest(obs.lat, obs.lon, mF.az, dCross);
+    const trk = rev(mF.az - 90), gs = 240;
+    const st = dest(CP[0], CP[1], rev(trk + 180), gs * tCross);
+    fleet.push({ cs: 'CSA1337', lat0: st[0], lon0: st[1], alt0: h, trk, gsMs: gs, vrMs: 0, seenPos: 0 });
+  }
+  const rng = () => Math.random();
+  const tags = ['RYR', 'EZY', 'DLH', 'AFR', 'KLM', 'WZZ', 'BAW', 'SWR'];
+  for (let i = 0; i < 8; i++) {
+    const brg = rng() * 360, dist = (15 + rng() * 130) * 1000, p = dest(obs.lat, obs.lon, brg, dist);
+    fleet.push({
+      cs: tags[i % 8] + Math.floor(1000 + rng() * 8000),
+      lat0: p[0], lon0: p[1], alt0: 7500 + rng() * 4500,
+      trk: rng() * 360, gsMs: 190 + rng() * 80, vrMs: (rng() - 0.5) * 4, seenPos: 0,
+    });
+  }
+  return fleet;
+}
+
+// Stav simulace drží volající (state), aby byl modul bezstavový a snadno testovatelný.
+function fetchDemo(demoState, obs, zone, now) {
+  if (!demoState.fleet) {
+    demoState.fleet = makeDemoFleet(obs, zone, now);
+    demoState.time = now.getTime();
+  }
+  const dt = (now.getTime() - demoState.time) / 1000;
+  demoState.time = now.getTime();
+  demoState.fleet.forEach(a => {
+    const p = dest(a.lat0, a.lon0, a.trk, a.gsMs * dt);
+    a.lat0 = p[0]; a.lon0 = p[1]; a.alt0 = Math.max(0, a.alt0 + a.vrMs * dt);
+  });
+  return demoState.fleet.map(a => ({ ...a }));
+}
+
+
+/* ============ js/render.js ============ */
+// ============================================================================
+//  render.js — Vykreslování: klenba oblohy (az/el) a radarová mapa
+//  Funkce jsou bezstavové — dostávají vše parametrem (snadné testování/rozšíření).
+// ============================================================================
+
+
+const SVGNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+// Elevace 90 = střed, 0 = okraj
+function skyXY(cx, cy, R, az, elev) {
+  const rr = R * (90 - elev) / 90;
+  const a = (az - 90) * D2R; // sever nahoru
+  return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+}
+
+// Osvětlená výseč Měsíce (polygon)
+function moonPhasePoly(R, k, waxing, N = 28) {
+  const T = R * (1 - 2 * k); let s = '';
+  for (let i = 0; i <= N; i++) {
+    const y = -R + 2 * R * i / N, xc = Math.sqrt(Math.max(0, R * R - y * y));
+    s += (waxing ? xc : -xc).toFixed(2) + ',' + y.toFixed(2) + ' ';
+  }
+  for (let i = 0; i <= N; i++) {
+    const y = R - 2 * R * i / N, xc = Math.sqrt(Math.max(0, R * R - y * y)), xt = T * xc / R;
+    s += (waxing ? xt : -xt).toFixed(2) + ',' + y.toFixed(2) + ' ';
+  }
+  return s.trim();
+}
+
+function drawSky(svg, moon, aircraft, hits, view) {
+  const { selected, tolDeg, minSkyEl = 5 } = view;
+  svg.innerHTML = '';
+  const cx = 280, cy = 280, R = 250;
+  svg.appendChild(el('circle', { cx, cy, r: R, fill: '#060a0e', stroke: '#1d2731', 'stroke-width': 1.5 }));
+  [0, 30, 60].forEach(e => {
+    const rr = R * (90 - e) / 90;
+    svg.appendChild(el('circle', { cx, cy, r: rr, fill: 'none', stroke: '#13202b', 'stroke-width': 1 }));
+    const lab = el('text', { x: cx + 4, y: cy - rr + 13, fill: '#3a4c58', 'font-size': 10, 'font-family': 'IBM Plex Mono' });
+    lab.textContent = e + '°'; svg.appendChild(lab);
+  });
+  svg.appendChild(el('circle', { cx, cy, r: 2.5, fill: '#3a4c58' }));
+  for (let a = 0; a < 360; a += 30) {
+    const [x2, y2] = skyXY(cx, cy, R, a, 0);
+    svg.appendChild(el('line', { x1: cx, y1: cy, x2, y2, stroke: '#0f1a22', 'stroke-width': 1 }));
+  }
+  [['S', 0], ['V', 90], ['J', 180], ['Z', 270]].forEach(([n, a]) => {
+    const [x, y] = skyXY(cx, cy, R + 20, a, 0);
+    const t = el('text', { x, y: y + 4, fill: '#6b7d8a', 'font-size': 14, 'font-family': 'Chakra Petch', 'font-weight': 600, 'text-anchor': 'middle' });
+    t.textContent = n; svg.appendChild(t);
+  });
+
+  const isCand = a => a.sep != null && a.sep < ((a.mDiam || 0.52) / 2 + tolDeg) * 4;
+
+  // Dráhy letu — jen kandidáti/přelet/vybrané (odplevelení)
+  aircraft.forEach(a => {
+    const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected;
+    if (!(isHit || isSel || isCand(a))) return;
+    if (a.el < -2 || a.predEl == null || a.predEl < -2) return;
+    const [x1, y1] = skyXY(cx, cy, R, a.az, Math.max(a.el, 0));
+    const [x2, y2] = skyXY(cx, cy, R, a.predAz, Math.max(a.predEl, 0));
+    svg.appendChild(el('line', {
+      x1, y1, x2, y2, stroke: isHit ? '#5ee08a' : '#c4761c',
+      'stroke-width': isHit ? 2 : 1.4, 'stroke-dasharray': isHit ? '' : '3 3', opacity: isHit ? 0.9 : 0.55,
+    }));
+  });
+
+  // Letadla
+  aircraft.forEach(a => {
+    if (a.el < 0) return;
+    const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected, cand = isCand(a);
+    const climbingIn = a.predEl != null && a.predEl > a.el;
+    if (a.el < minSkyEl && !(isHit || isSel || cand || climbingIn)) return;
+    const [x, y] = skyXY(cx, cy, R, a.az, a.el);
+    const col = isHit ? '#5ee08a' : (isSel ? '#ff9d2f' : '#35e0d8');
+    if (isSel) svg.appendChild(el('circle', { cx: x, cy: y, r: 13, fill: 'rgba(255,157,47,.15)', stroke: '#ff9d2f', 'stroke-width': 1.5 }));
+    if (isHit) svg.appendChild(el('circle', { cx: x, cy: y, r: 9, fill: 'none', stroke: '#5ee08a', 'stroke-width': 1.2, opacity: 0.7 }));
+    const g = el('g', { transform: `translate(${x},${y}) rotate(${a.trk})` });
+    g.appendChild(el('path', { d: 'M0,-6 L4,5 L0,2 L-4,5 Z', fill: col, stroke: '#03110f', 'stroke-width': 0.5 }));
+    svg.appendChild(g);
+    if (isHit || isSel || cand || a.el >= 22) {
+      const lab = el('text', { x: x + 8, y: y + 3, fill: col, 'font-size': 9.5, 'font-weight': isSel ? 600 : 400, 'font-family': 'IBM Plex Mono' });
+      lab.textContent = a.cs; svg.appendChild(lab);
+    }
+  });
+
+  // Měsíc s fází
+  if (moon && moon.el > -2) {
+    const [mx, my] = skyXY(cx, cy, R, moon.az, Math.max(moon.el, 0));
+    const visR = Math.max(8, R * (moon.diam / 90) * 7);
+    svg.appendChild(el('circle', { cx: mx, cy: my, r: visR + 5, fill: 'none', stroke: '#ffe9b0', 'stroke-width': 1, 'stroke-dasharray': '2 3', opacity: 0.5 }));
+    svg.appendChild(el('circle', { cx: mx, cy: my, r: visR, fill: '#2a2418', opacity: moon.el > 0 ? 0.85 : 0.4 }));
+    const poly = el('polygon', {
+      points: moonPhasePoly(visR, moon.phaseFrac, moon.waxing),
+      transform: `translate(${mx},${my})`, fill: '#ffe9b0', opacity: moon.el > 0 ? 0.97 : 0.45,
+    });
+    poly.setAttribute('style', 'filter:drop-shadow(0 0 7px rgba(255,233,176,.6))');
+    svg.appendChild(poly);
+    if (moon.el <= 0) {
+      const t = el('text', { x: mx, y: my - visR - 6, fill: '#caa45e', 'font-size': 10, 'text-anchor': 'middle', 'font-family': 'IBM Plex Mono' });
+      t.textContent = 'pod obzorem'; svg.appendChild(t);
+    }
+  }
+}
+
+function drawRadar(svg, obs, zone, aircraft, hits, view) {
+  const { selected } = view;
+  svg.innerHTML = '';
+  const cx = 280, cy = 280, R = 250;
+  const rangeKm = Math.max(80, (zone ? (zone.radius + haversine(obs.lat, obs.lon, zone.center[0], zone.center[1])) / 1000 : 150) * 1.15);
+  const kmToPx = R / rangeKm;
+  svg.appendChild(el('rect', { x: 30, y: 30, width: 500, height: 500, fill: '#060a0e', stroke: '#1d2731', rx: 6 }));
+  const ringStep = rangeKm <= 100 ? 25 : (rangeKm <= 300 ? 50 : 100);
+  for (let k = ringStep; k <= rangeKm; k += ringStep) {
+    svg.appendChild(el('circle', { cx, cy, r: k * kmToPx, fill: 'none', stroke: '#13202b', 'stroke-width': 1 }));
+    const t = el('text', { x: cx + 2, y: cy - k * kmToPx + 12, fill: '#3a4c58', 'font-size': 9, 'font-family': 'IBM Plex Mono' });
+    t.textContent = k + 'km'; svg.appendChild(t);
+  }
+  svg.appendChild(el('line', { x1: cx, y1: 30, x2: cx, y2: 530, stroke: '#0f1a22' }));
+  svg.appendChild(el('line', { x1: 30, y1: cy, x2: 530, y2: cy, stroke: '#0f1a22' }));
+  [['S', cx, 40], ['J', cx, 524], ['V', 524, cy + 3], ['Z', 38, cy + 3]].forEach(([n, x, y]) => {
+    const t = el('text', { x, y, fill: '#6b7d8a', 'font-size': 12, 'font-family': 'Chakra Petch', 'text-anchor': 'middle', 'font-weight': 600 });
+    t.textContent = n; svg.appendChild(t);
+  });
+  const toXY = (lat, lon) => {
+    const dN = haversine(obs.lat, obs.lon, lat, obs.lon) * (lat >= obs.lat ? 1 : -1);
+    const dE = haversine(obs.lat, obs.lon, obs.lat, lon) * (lon >= obs.lon ? 1 : -1);
+    return [cx + dE / 1000 * kmToPx, cy - dN / 1000 * kmToPx];
+  };
+  if (zone && zone.valid) {
+    const [zx, zy] = toXY(zone.center[0], zone.center[1]);
+    svg.appendChild(el('circle', { cx: zx, cy: zy, r: zone.radius / 1000 * kmToPx, fill: 'rgba(53,224,216,.05)', stroke: '#1a9b95', 'stroke-width': 1.2, 'stroke-dasharray': '5 4' }));
+    const [nx, ny] = toXY(...dest(obs.lat, obs.lon, zone.azMid, zone.dNear));
+    const [fx, fy] = toXY(...dest(obs.lat, obs.lon, zone.azMid, zone.dFar));
+    svg.appendChild(el('line', { x1: nx, y1: ny, x2: fx, y2: fy, stroke: '#ff9d2f', 'stroke-width': 3, opacity: 0.6, 'stroke-linecap': 'round' }));
+    const lbl = el('text', { x: fx + 6, y: fy, fill: '#c4761c', 'font-size': 9, 'font-family': 'IBM Plex Mono' });
+    lbl.textContent = 'koridor Měsíce'; svg.appendChild(lbl);
+  }
+  svg.appendChild(el('circle', { cx, cy, r: 4, fill: '#ff4d4d' }));
+  svg.appendChild(el('circle', { cx, cy, r: 8, fill: 'none', stroke: '#ff4d4d', opacity: 0.5 }));
+
+  const radarPts = [];
+  aircraft.forEach(a => {
+    const [x, y] = toXY(a.lat, a.lon);
+    if (x < 30 || x > 530 || y < 30 || y > 530) return;
+    const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected;
+    radarPts.push({ cs: a.cs, x, y, gsMs: a.gsMs, altM: a.altM, trk: a.trk });
+    if (isSel) svg.appendChild(el('circle', { cx: x, cy: y, r: 11, fill: 'rgba(255,157,47,.18)', stroke: '#ff9d2f', 'stroke-width': 1.5 }));
+    const col = isHit ? '#5ee08a' : (isSel ? '#ff9d2f' : '#35e0d8');
+    const g = el('g', { transform: `translate(${x},${y}) rotate(${a.trk})` });
+    g.appendChild(el('path', { d: 'M0,-5 L3.5,4 L0,1.5 L-3.5,4 Z', fill: col }));
+    svg.appendChild(g);
+    if (isHit) svg.appendChild(el('circle', { cx: x, cy: y, r: 8, fill: 'none', stroke: '#5ee08a', opacity: 0.7 }));
+  });
+  return radarPts; // volající si je uloží pro hover/klik
+}
+
+
+/* ============ js/storage.js ============ */
+// ============================================================================
+//  storage.js — Perzistence v localStorage (uložené pozice + nastavení)
+//  Data jsou u každého návštěvníka lokálně v prohlížeči, nic se nikam neodesílá.
+// ============================================================================
+
+function safeParse(raw, fallback) {
+  try { return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
+}
+
+// ---- Uložené pozice pozorovatele ----
+function loadPositions() {
+  return safeParse(localStorage.getItem(LS.positions), []);
+}
+function savePositions(arr) {
+  try { localStorage.setItem(LS.positions, JSON.stringify(arr)); } catch {}
+}
+function addPosition(pos) {
+  const arr = loadPositions();
+  arr.unshift(pos);
+  if (arr.length > 20) arr.splice(20);
+  savePositions(arr);
+  return arr;
+}
+function removePosition(index) {
+  const arr = loadPositions();
+  arr.splice(index, 1);
+  savePositions(arr);
+  return arr;
+}
+
+// ---- Nastavení (poslední poloha + parametry) ----
+function loadSettings() {
+  return safeParse(localStorage.getItem(LS.settings), null);
+}
+function saveSettings(obj) {
+  try { localStorage.setItem(LS.settings, JSON.stringify(obj)); } catch {}
+}
+
+const store = { safeParse, loadPositions, savePositions, addPosition, removePosition, loadSettings, saveSettings };
+
+
+/* ============ js/app.js ============ */
+// ============================================================================
+//  app.js — Hlavní aplikace: stav, smyčky, UI, alarm, GPS, perzistence
+//  Architektura smyček (kvůli CPU):
+//    • POLL    — síťový dotaz na data            (interval = pollMs, default 5 s)
+//    • REFRESH — přepočet predikcí + vykreslení  (interval = refreshMs, default 1 s)
+//  Přepočet i vykreslení jsou oddělené od pollu; obojí lze zpomalit posuvníky.
+//  Na pozadí (skrytá záložka) běží přepočet kvůli alarmu, ale kreslení se vynechá.
+// ============================================================================
+
+
+
+
+
+
+
+
+const $ = id => document.getElementById(id);
+
+// ---------------------------------------------------------------- stav
+const S = {
+  running: false, source: DEFAULTS.source,
+  pollTimer: null, refreshTimer: null, cdTimer: null,
+  pollMs: DEFAULTS.pollMs, refreshMs: DEFAULTS.refreshMs,
+  nextPoll: 0,
+  aircraft: [], enriched: [], obs: null, opt: null,
+  fetchClientMs: Date.now(), selected: null, radarPts: [],
+  demo: { fleet: null, time: 0 },
+  navOn: false, gpsWatch: null, compassHeading: null,
+};
+
+// ---------------------------------------------------------------- čtení DOM
+function readObs() {
+  return { lat: parseFloat($('lat').value), lon: parseFloat($('lon').value), h: parseFloat($('elev').value) || 0 };
+}
+function readOpt() {
+  return {
+    horizonMin: +$('horizon').value, horizonSec: +$('horizon').value * 60,
+    stepSec: +$('step').value,
+    tolDeg: (+$('tol').value) / 100,
+    hmin: +$('hmin').value, hmax: +$('hmax').value,
+    vmax: +$('vmax').value, minSkyEl: DEFAULTS.minSkyEl,
+  };
+}
+
+// ---------------------------------------------------------------- readouty Měsíce
+function updateMoonReadout() {
+  const obs = readObs(); if (isNaN(obs.lat)) return null;
+  const now = new Date();
+  const m = moonTopo(now, obs.lat, obs.lon);
+  const m2 = moonTopo(new Date(now.getTime() + 600000), obs.lat, obs.lon);
+  $('mAz').textContent = m.az.toFixed(2) + '°';
+  $('mEl').textContent = m.el.toFixed(2) + '°';
+  $('mEl').style.color = m.el > 0 ? 'var(--cyan)' : 'var(--red)';
+  $('mDia').innerHTML = (m.diam * 60).toFixed(1) + '<small> ′</small>';
+  $('mDist').innerHTML = Math.round(m.distKm).toLocaleString('cs') + '<small> km</small>';
+  $('mPhase').textContent = m.phaseName + ' (' + Math.round(m.phaseFrac * 100) + '%)';
+  const dAz = rev(m2.az - m.az); const drift = dAz > 180 ? dAz - 360 : dAz;
+  $('mDrift').innerHTML = (drift > 0 ? '→ ' : '← ') + Math.abs(drift).toFixed(2) + '°<small>/10min</small>';
+  const ev = nextMoonEvent(now, obs.lat, obs.lon);
+  if (ev) {
+    const h = Math.floor(ev.mins / 60), mm = Math.round(ev.mins % 60);
+    const tStr = (h > 0 ? h + 'h ' : '') + mm + 'm';
+    const loc = ev.when.toLocaleTimeString('cs', { hour: '2-digit', minute: '2-digit' });
+    $('mEventK').textContent = ev.rising ? 'Do východu' : 'Do západu';
+    $('mEvent').innerHTML = (ev.rising ? '↑ ' : '↓ ') + tStr + ' <small>(' + loc + ')</small>';
+    $('mEvent').style.color = ev.rising ? 'var(--amber)' : 'var(--cyan)';
+  } else { $('mEvent').textContent = '—'; }
+  return m;
+}
+
+function updateZoneReadout() {
+  const obs = readObs(), opt = readOpt(); if (isNaN(obs.lat)) return null;
+  const z = computeZone(new Date(), obs.lat, obs.lon, obs.h, opt.hmin, opt.hmax, opt.horizonMin, opt.vmax, opt.tolDeg);
+  const distC = haversine(obs.lat, obs.lon, z.center[0], z.center[1]) / 1000;
+  if (!z.valid) {
+    $('zone').innerHTML = '<div class="note" style="color:#ffb3b3">⚠ Měsíc je pod obzorem (elevace ' +
+      z.moonEl.toFixed(1) + '°). Přelet kotoučem teď není možný — zkus jiný čas.</div>';
+    return z;
+  }
+  $('zone').innerHTML = `
+    <div class="zrow"><span class="lbl">Azimut koridoru</span><span class="num">${z.azMid.toFixed(1)}°</span></div>
+    <div class="zrow"><span class="lbl">Koridor (hladiny)</span><span class="num">${(z.dNear / 1000).toFixed(1)}–${(z.dFar / 1000).toFixed(1)} km</span></div>
+    <div class="zrow"><span class="lbl">Střed zóny</span><span class="num">${distC.toFixed(1)} km @ ${z.azMid.toFixed(0)}°</span></div>
+    <div class="zrow"><span class="lbl">Dolet letadel za ${opt.horizonMin} min</span><span class="num">${(z.reach / 1000).toFixed(0)} km</span></div>
+    <div class="zrow ztot"><span class="lbl" style="color:var(--amber)">⌀ Poloměr dotazu</span><span class="num" style="font-size:17px">${(z.radius / 1000).toFixed(0)} km</span></div>
+    <div class="note" style="margin-top:6px">Dotaz pokrývá jen výseč ve směru Měsíce + dolet — místo tisíců letadel jen relevantní hrstka.</div>`;
+  return z;
+}
+
+// ---------------------------------------------------------------- predikce
+function buildEnriched(list, obs, opt) {
+  const nowMs = Date.now();
+  const track = buildMoonTrack(nowMs, obs, opt.horizonSec, opt.stepSec); // 1× pro všechna letadla
+  return list.map(a => {
+    const p = acPosAt(a, 0, S.fetchClientMs);
+    const cur = aircraftAzEl(obs.lat, obs.lon, obs.h, p.lat, p.lon, p.altM);
+    const pr = predict(a, obs, track, S.fetchClientMs);
+    return {
+      ...a, lat: p.lat, lon: p.lon, altM: p.altM,
+      az: cur.az, el: cur.el, distNow: cur.dist,
+      predAz: pr.az, predEl: pr.el, predLa: pr.la, predLo: pr.lo,
+      sep: pr.sep, tHit: pr.t, mDiam: pr.diam || 0.52,
+    };
+  });
+}
+
+// COMPUTE — přepočet (běží i na pozadí kvůli alarmu)
+function compute() {
+  S.obs = readObs(); S.opt = readOpt();
+  if (isNaN(S.obs.lat)) return;
+  S.enriched = buildEnriched(S.aircraft, S.obs, S.opt);
+  S.enriched.sort((a, b) => a.sep - b.sep);
+  if (S.running) checkAlarms(S.enriched, S.opt);
+}
+
+// DRAW — vykreslení (přeskočeno na skryté záložce)
+function draw() {
+  if (document.hidden) return;
+  const obs = S.obs, opt = S.opt;
+  const moon = updateMoonReadout();
+  const zone = updateZoneReadout();
+  const enriched = S.enriched;
+  const hits = [], cands = [];
+  enriched.forEach(a => {
+    const thresh = a.mDiam / 2 + opt.tolDeg;
+    if (a.sep < thresh * 4) cands.push(a);
+    if (a.sep < thresh) hits.push(a);
+  });
+  const view = { selected: S.selected, tolDeg: opt.tolDeg, minSkyEl: opt.minSkyEl };
+  drawSky($('sky'), moon, enriched, hits, view);
+  S.radarPts = drawRadar($('radar'), obs, zone, enriched, hits, view);
+
+  // tabulka
+  const tb = $('rows'); tb.innerHTML = '';
+  const show = enriched.filter(a => a.predEl > -2).slice(0, 14);
+  if (!show.length) {
+    tb.innerHTML = '<tr><td colspan="5" class="empty">Žádná letadla v zóně…</td></tr>';
+  }
+  show.forEach(a => {
+    const thresh = a.mDiam / 2 + opt.tolDeg;
+    const isHit = a.sep < thresh, imminent = isHit && a.tHit < 60;
+    const tr = document.createElement('tr');
+    if (imminent) tr.className = 'imminent'; else if (isHit) tr.className = 'hit';
+    if (a.cs === S.selected) tr.classList.add('selrow');
+    let badge = `<span class="badge near">${a.sep.toFixed(2)}°</span>`;
+    if (imminent) badge = '<span class="badge now">TEĎ</span>';
+    else if (isHit) badge = '<span class="badge hit">PŘELET</span>';
+    const mm = Math.floor(a.tHit / 60), ss = Math.round(a.tHit % 60);
+    tr.style.cursor = 'pointer';
+    tr.innerHTML = `<td class="cs">${a.cs}</td>
+      <td>${a.tHit > 0 ? (mm > 0 ? mm + 'm' : '') + ss + 's' : '—'}</td>
+      <td class="sep" style="color:${isHit ? 'var(--green)' : 'var(--txt)'}">${a.sep < 99 ? a.sep.toFixed(3) + '°' : '—'}</td>
+      <td>${Math.round(a.altM)} m</td>
+      <td>${badge}</td>`;
+    tr.onclick = () => { S.selected = (S.selected === a.cs ? null : a.cs); draw(); };
+    tb.appendChild(tr);
+  });
+  $('acCount').textContent = S.aircraft.length;
+  $('candCount').textContent = cands.length;
+  $('hitCount').textContent = hits.length;
+  renderNav(enriched, obs, opt);
+}
+
+function refresh() {
+  compute();
+  draw();
+}
+
+// ---------------------------------------------------------------- naváděcí korekce
+function renderNav(enriched, obs) {
+  if (!S.navOn) return;
+  const list = $('navList');
+  const cands = enriched.filter(a => a.sep != null && a.sep <= 2.0 && a.predEl > 0)
+                        .sort((x, y) => x.sep - y.sep).slice(0, 5);
+  if (!cands.length) { list.innerHTML = '<div class="pos-empty">Žádná letadla do 2° odchylky.</div>'; return; }
+  list.innerHTML = '';
+  cands.forEach(a => {
+    const co = correctionFor(a, obs, S.fetchClientMs);
+    if (!co) return;
+    const tight = co.dist < 25;
+    const mm = Math.floor(co.tHit / 60), ss = Math.round(co.tHit % 60);
+    const card = document.createElement('div');
+    card.className = 'nav-card' + (tight ? ' tight' : '');
+    if (a.cs === S.selected) card.style.boxShadow = 'inset 3px 0 0 var(--amber)';
+    const headRef = (S.compassHeading != null) ? S.compassHeading : 0;
+    const arrowRot = rev(co.brg - headRef);
+    card.innerHTML = `
+      <div class="nc-top"><span class="nc-cs">${a.cs}</span><span class="nc-miss">míjí o ${co.origSep.toFixed(2)}°</span></div>
+      <div class="nc-main">
+        <div class="nav-arrow"><svg viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="20" fill="none" stroke="#1d2731" stroke-width="1.5"/>
+          <g transform="rotate(${arrowRot} 22 22)">
+            <path d="M22 6 L29 30 L22 24 L15 30 Z" fill="${tight ? '#5ee08a' : '#ff9d2f'}" stroke="#03110f" stroke-width=".5"/>
+          </g>
+        </svg></div>
+        <div class="nav-figs">
+          <div class="nf-dist">${tight ? '✓ na místě' : Math.round(co.dist) + ' m'}</div>
+          <div class="nf-dir">${tight ? 'drž pozici' : compass(co.brg) + ' · ' + Math.round(co.brg) + '°'}</div>
+          <div class="nf-gps">${co.tgtLat.toFixed(6)}, ${co.tgtLon.toFixed(6)}</div>
+        </div>
+      </div>
+      <div class="nc-foot"><span>přelet za ${mm > 0 ? mm + 'm ' : ''}${ss}s</span><span>po přesunu: <b>${co.residSep.toFixed(2)}°</b></span></div>`;
+    card.onclick = () => { S.selected = (S.selected === a.cs ? null : a.cs); draw(); };
+    card.style.cursor = 'pointer';
+    list.appendChild(card);
+  });
+  if (!list.children.length) list.innerHTML = '<div class="pos-empty">Letadla do 2°, ale Měsíc je nízko / pod obzorem.</div>';
+}
+
+// ---------------------------------------------------------------- POLL
+async function poll() {
+  S.obs = readObs(); S.opt = readOpt();
+  if (isNaN(S.obs.lat)) return;
+  try {
+    const z = computeZone(new Date(), S.obs.lat, S.obs.lon, S.obs.h, S.opt.hmin, S.opt.hmax, S.opt.horizonMin, S.opt.vmax, S.opt.tolDeg);
+    if (!z.valid) setPill('err', 'MĚSÍC POD OBZOREM');
+    if (S.source === 'demo') {
+      S.aircraft = fetchDemo(S.demo, S.obs, z, new Date());
+      S.fetchClientMs = Date.now();
+      setPill('demo', 'SIMULACE'); $('src').textContent = 'synth';
+    } else {
+      S.aircraft = await fetchLive(S.source, S.obs, z, $('proxy').value.trim());
+      S.fetchClientMs = Date.now();
+      const src = sourceById(S.source);
+      setPill('live', 'LIVE'); $('src').textContent = src.url.split('//')[1].split('/')[0];
+      hideWarn();
+    }
+  } catch (e) {
+    setPill('err', 'CHYBA SPOJENÍ'); $('src').textContent = '—';
+    showWarn('Nepodařilo se načíst LIVE data: ' + e.message +
+      '. Pravděpodobně CORS — zkus jiný LIVE zdroj, SIMULACI, nebo zadej proxy URL.');
+  }
+  refresh();
+  S.nextPoll = Math.round(S.pollMs / 1000);
+}
+
+function setPill(cls, txt) { $('pill').className = 'pill ' + cls; $('mode').textContent = txt; }
+function showWarn(t) { $('warn').textContent = t; $('warn').classList.add('show'); }
+function hideWarn() { $('warn').classList.remove('show'); }
+
+// ---------------------------------------------------------------- start/stop + plánování smyček
+function scheduleLoops() {
+  if (S.pollTimer) clearInterval(S.pollTimer);
+  if (S.refreshTimer) clearInterval(S.refreshTimer);
+  S.pollTimer = setInterval(poll, S.pollMs);
+  S.refreshTimer = setInterval(refresh, S.refreshMs);
+}
+
+function start() {
+  S.obs = readObs(); S.opt = readOpt();
+  if (isNaN(S.obs.lat) || isNaN(S.obs.lon)) { alert('Zadej platné GPS souřadnice.'); return; }
+  S.running = true; S.demo.fleet = null;
+  $('start').style.display = 'none'; $('stop').style.display = 'block';
+  poll();
+  scheduleLoops();
+  if (S.cdTimer) clearInterval(S.cdTimer);
+  S.cdTimer = setInterval(() => {
+    if (S.nextPoll > 0) S.nextPoll--;
+    $('cd').textContent = S.running ? S.nextPoll + 's' : '—';
+  }, 1000);
+  saveCurrentSettings();
+}
+function stop() {
+  S.running = false;
+  clearInterval(S.pollTimer); clearInterval(S.refreshTimer); clearInterval(S.cdTimer);
+  $('start').style.display = 'block'; $('stop').style.display = 'none';
+  setPill('', 'STANDBY'); $('cd').textContent = '—';
+}
+
+// ---------------------------------------------------------------- UI BINDING
+$('horizon').oninput = e => { $('hzVal').textContent = e.target.value + ' min'; updateZoneReadout(); persistSoon(); };
+$('step').oninput = e => { $('stepVal').textContent = e.target.value + ' s'; persistSoon(); };
+$('tol').oninput = e => { $('tolVal').textContent = (e.target.value / 100).toFixed(2) + '°'; updateZoneReadout(); persistSoon(); };
+['lat', 'lon', 'elev', 'hmin', 'hmax', 'vmax'].forEach(id => $(id).oninput = () => { updateMoonReadout(); updateZoneReadout(); persistSoon(); });
+
+// Výkon — posuvníky frekvencí
+$('pollRate').oninput = e => {
+  S.pollMs = +e.target.value;
+  $('pollRateVal').textContent = (S.pollMs / 1000).toFixed(0) + ' s';
+  if (S.running) scheduleLoops();
+  persistSoon();
+};
+$('refreshRate').oninput = e => {
+  S.refreshMs = +e.target.value;
+  const s = S.refreshMs / 1000;
+  $('refreshRateVal').textContent = s.toFixed(2).replace(/\.?0+$/, '') + ' s · ' + (1 / s).toFixed(1) + ' fps';
+  if (S.running) scheduleLoops();
+  persistSoon();
+};
+
+// Datové zdroje — vygenerované z configu
+function buildSourceButtons() {
+  const seg = $('srcSeg'); seg.innerHTML = '';
+  DATA_SOURCES.forEach(s => {
+    const b = document.createElement('button');
+    b.dataset.src = s.id; b.textContent = s.label; b.title = s.note;
+    if (s.id === S.source) b.classList.add('on');
+    b.onclick = () => {
+      seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on'); S.source = s.id; persistSoon();
+    };
+    seg.appendChild(b);
+  });
+}
+
+$('start').onclick = start;
+$('stop').onclick = stop;
+$('setNow').onclick = () => { updateMoonReadout(); updateZoneReadout(); };
+$('geo').onclick = () => {
+  if (!navigator.geolocation) { alert('Geolokace není dostupná.'); return; }
+  navigator.geolocation.getCurrentPosition(p => {
+    $('lat').value = p.coords.latitude.toFixed(4);
+    $('lon').value = p.coords.longitude.toFixed(4);
+    if (p.coords.altitude) $('elev').value = Math.round(p.coords.altitude);
+    updateMoonReadout(); updateZoneReadout(); persistSoon();
+  }, err => alert('Geolokace selhala: ' + err.message));
+};
+
+// radar hover/klik
+(function () {
+  const svg = $('radar'), tip = $('radarTip');
+  function nearest(clientX, clientY) {
+    const r = svg.getBoundingClientRect();
+    const sx = (clientX - r.left) / r.width * 560, sy = (clientY - r.top) / r.height * 560;
+    let best = null, bd = 16 * 16;
+    (S.radarPts || []).forEach(p => { const dx = p.x - sx, dy = p.y - sy, d = dx * dx + dy * dy; if (d < bd) { bd = d; best = p; } });
+    return best;
+  }
+  svg.addEventListener('mousemove', e => {
+    const p = nearest(e.clientX, e.clientY);
+    if (p) {
+      tip.style.display = 'block';
+      tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY + 14) + 'px';
+      tip.innerHTML = `<div class="rt-cs">${p.cs}</div>
+        <div class="rt-row">Rychlost <b>${Math.round(p.gsMs * 3.6)} km/h</b></div>
+        <div class="rt-row">Výška <b>${Math.round(p.altM)} m</b></div>
+        <div class="rt-row">Kurz <b>${Math.round(p.trk)}°</b></div>`;
+      svg.style.cursor = 'pointer';
+    } else { tip.style.display = 'none'; svg.style.cursor = 'default'; }
+  });
+  svg.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+  const tap = (cx, cy) => { const p = nearest(cx, cy); if (p) { S.selected = (S.selected === p.cs ? null : p.cs); draw(); } };
+  svg.addEventListener('click', e => tap(e.clientX, e.clientY));
+})();
+
+// ---------------------------------------------------------------- naváděcí korekce / GPS / kompas
+$('navOn').onchange = e => {
+  S.navOn = e.target.checked;
+  $('navBody').classList.toggle('disabled-look', !S.navOn);
+  if (S.navOn && S.running) draw();
+  else if (!S.navOn) $('navList').innerHTML = '<div class="pos-empty">Korekce vypnuta.</div>';
+};
+function setGpsStatus(txt, cls) { const s = $('gpsStatus'); s.textContent = txt; s.className = 'notif-status' + (cls ? ' ' + cls : ''); }
+$('gpsLive').onclick = () => {
+  if (!navigator.geolocation) { alert('Geolokace není dostupná.'); return; }
+  setGpsStatus('GPS: zaměřuji…');
+  S.gpsWatch = navigator.geolocation.watchPosition(p => {
+    const { latitude, longitude, altitude, accuracy } = p.coords;
+    $('lat').value = latitude.toFixed(6);
+    $('lon').value = longitude.toFixed(6);
+    if (altitude != null && !isNaN(altitude)) $('elev').value = Math.round(altitude);
+    S.obs = { lat: latitude, lon: longitude, h: parseFloat($('elev').value) || 0 };
+    setGpsStatus('GPS: aktivní · ±' + Math.round(accuracy) + ' m', 'ok');
+    updateMoonReadout(); updateZoneReadout();
+    if (S.running) draw();
+  }, err => setGpsStatus('GPS chyba: ' + err.message, 'err'),
+    { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
+  $('gpsLive').style.display = 'none'; $('gpsStop').style.display = 'block';
+  enableCompass();
+};
+$('gpsStop').onclick = () => {
+  if (S.gpsWatch != null) { navigator.geolocation.clearWatch(S.gpsWatch); S.gpsWatch = null; }
+  setGpsStatus('GPS: vypnuto');
+  $('gpsLive').style.display = 'block'; $('gpsStop').style.display = 'none';
+  S.compassHeading = null;
+};
+function enableCompass() {
+  const handler = ev => {
+    let h = null;
+    if (ev.webkitCompassHeading != null) h = ev.webkitCompassHeading;
+    else if (ev.alpha != null) h = 360 - ev.alpha;
+    if (h != null) S.compassHeading = h;
+  };
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') window.addEventListener('deviceorientation', handler, true); }).catch(() => {});
+  } else if ('ondeviceorientationabsolute' in window) {
+    window.addEventListener('deviceorientationabsolute', handler, true);
+  } else {
+    window.addEventListener('deviceorientation', handler, true);
+  }
+}
+
+// ---------------------------------------------------------------- AUDIO ALARM
+let audioCtx = null, alarmNodes = [], alarmMuted = false;
+function getCtx() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+function playAlarm() {
+  if (alarmMuted) return;
+  stopAlarmAudio();
+  try {
+    const ctx = getCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const vol = +$('alarmVol').value / 100;
+    const pattern = [0, 0.18, 0.36];
+    for (let rep = 0; rep < 100; rep++) {
+      pattern.forEach(pt => {
+        const t = ctx.currentTime + rep * 1.4 + pt;
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(pt < 0.3 ? 880 : 1320, t);
+        osc.frequency.setValueAtTime(pt < 0.3 ? 1100 : 1320, t + 0.06);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(vol * 0.6, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+        osc.start(t); osc.stop(t + 0.15);
+        alarmNodes.push(osc, gain);
+      });
+    }
+  } catch (e) { console.warn('Audio error', e); }
+}
+function stopAlarmAudio() { alarmNodes.forEach(n => { try { n.disconnect(); } catch (_) {} }); alarmNodes = []; }
+$('alarmVol').oninput = e => { $('volVal').textContent = e.target.value + '%'; persistSoon(); };
+$('alarmTh').oninput = e => { $('alarmThVal').textContent = e.target.value + ' s'; persistSoon(); };
+
+// ---------------------------------------------------------------- notifikace
+function updateNotifStatus() {
+  const s = $('notifStatus');
+  if (!('Notification' in window)) { s.textContent = 'Notifikace: nepodporovány'; s.className = 'notif-status err'; return; }
+  if (Notification.permission === 'granted') { s.textContent = 'Notifikace: povoleny ✓'; s.className = 'notif-status ok'; }
+  else if (Notification.permission === 'denied') { s.textContent = 'Notifikace: zakázány v prohlížeči'; s.className = 'notif-status err'; }
+  else { s.textContent = 'Notifikace: čeká na povolení'; s.className = 'notif-status'; }
+}
+$('notifReq').onclick = async () => {
+  if (!('Notification' in window)) { alert('Prohlížeč notifikace nepodporuje.'); return; }
+  await Notification.requestPermission(); updateNotifStatus();
+};
+function sendBrowserNotif(title, body) {
+  if (('Notification' in window) && Notification.permission === 'granted') {
+    try { new Notification(title, { body, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="%23ffe9b0"/></svg>' }); } catch (_) {}
+  }
+}
+
+// ---------------------------------------------------------------- ALARM stav
+const ALARM = { active: false, dismissed: new Set(), lastTrigger: null };
+let alarmWatchdog = null;
+function resetAlarmWatchdog() { clearTimeout(alarmWatchdog); alarmWatchdog = setTimeout(() => { if (ALARM.active) dismissAlarm(); }, 30000); }
+function triggerAlarm(ac, sepDeg, tHitSec) {
+  if (ALARM.active || ALARM.dismissed.has(ac.cs)) return;
+  ALARM.active = true; ALARM.lastTrigger = ac.cs;
+  const mm = Math.floor(tHitSec / 60), ss = Math.round(tHitSec % 60);
+  $('alarmCs').textContent = ac.cs;
+  $('alarmDetail').innerHTML =
+    `Za: <b>${mm > 0 ? mm + 'm ' : ''} ${ss}s</b> &nbsp;·&nbsp; Odstup: <b>${sepDeg.toFixed(3)}°</b><br>` +
+    `Hladina: <b>${Math.round(ac.altM)} m</b> &nbsp;·&nbsp; Kurz: <b>${Math.round(ac.trk)}°</b>`;
+  $('alarm').classList.add('show');
+  playAlarm();
+  sendBrowserNotif('🌕 PŘELET MĚSÍCE — ' + ac.cs,
+    `Za ${mm > 0 ? mm + 'm ' : ''} ${ss}s · Odstup ${sepDeg.toFixed(3)}° · ${Math.round(ac.altM)} m`);
+}
+function dismissAlarm() {
+  ALARM.active = false;
+  if (ALARM.lastTrigger) ALARM.dismissed.add(ALARM.lastTrigger);
+  $('alarm').classList.remove('show');
+  stopAlarmAudio(); alarmMuted = false;
+  setTimeout(() => { if (ALARM.lastTrigger) ALARM.dismissed.delete(ALARM.lastTrigger); }, 180000);
+}
+function muteAlarm() { alarmMuted = true; stopAlarmAudio(); }
+$('alarmDismiss').onclick = dismissAlarm;
+$('alarmMute').onclick = muteAlarm;
+
+function checkAlarms(enriched, opt) {
+  const thSec = +$('alarmTh').value;
+  let best = null;
+  enriched.forEach(a => {
+    const thresh = (a.mDiam || 0.52) / 2 + opt.tolDeg;
+    if (a.sep < thresh && a.tHit <= thSec) { if (!best || a.tHit < best.tHit) best = a; }
+  });
+  if (best) { resetAlarmWatchdog(); triggerAlarm(best, best.sep, best.tHit); }
+  else if (ALARM.active) { resetAlarmWatchdog(); }
+}
+
+// ---------------------------------------------------------------- uložené pozice
+function renderPosList() {
+  const arr = store.loadPositions(); const wrap = $('posList'); wrap.innerHTML = '';
+  if (!arr.length) { wrap.innerHTML = '<div class="pos-empty">Žádné uložené pozice</div>'; return; }
+  arr.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'pos-item'; d.title = 'Klikni pro načtení';
+    d.innerHTML = `<div><div class="pos-name">${p.name}</div><div class="pos-coords">${p.lat} · ${p.lon} · ${p.elev}m</div></div>
+      <button class="pos-del" title="Smazat" aria-label="Smazat">✕</button>`;
+    d.querySelector('.pos-del').onclick = e => { e.stopPropagation(); store.removePosition(i); renderPosList(); };
+    d.onclick = () => { $('lat').value = p.lat; $('lon').value = p.lon; $('elev').value = p.elev; updateMoonReadout(); updateZoneReadout(); persistSoon(); };
+    wrap.appendChild(d);
+  });
+}
+$('posSave').onclick = () => {
+  const name = $('posName').value.trim() || 'Pozice ' + new Date().toLocaleTimeString('cs');
+  store.addPosition({ name, lat: $('lat').value, lon: $('lon').value, elev: $('elev').value || 0 });
+  renderPosList(); $('posName').value = '';
+};
+
+// ---------------------------------------------------------------- perzistence nastavení
+let persistTimer = null;
+function persistSoon() { clearTimeout(persistTimer); persistTimer = setTimeout(saveCurrentSettings, 400); }
+function saveCurrentSettings() {
+  store.saveSettings({
+    lat: $('lat').value, lon: $('lon').value, elev: $('elev').value,
+    horizon: $('horizon').value, step: $('step').value, tol: $('tol').value,
+    hmin: $('hmin').value, hmax: $('hmax').value, vmax: $('vmax').value,
+    source: S.source, proxy: $('proxy').value,
+    pollMs: S.pollMs, refreshMs: S.refreshMs,
+    alarmVol: $('alarmVol').value, alarmTh: $('alarmTh').value,
+  });
+}
+function applySettings(s) {
+  if (!s) return;
+  const set = (id, v) => { if (v != null && $(id)) $(id).value = v; };
+  set('lat', s.lat); set('lon', s.lon); set('elev', s.elev);
+  set('horizon', s.horizon); set('step', s.step); set('tol', s.tol);
+  set('hmin', s.hmin); set('hmax', s.hmax); set('vmax', s.vmax);
+  set('proxy', s.proxy);
+  set('alarmVol', s.alarmVol); set('alarmTh', s.alarmTh);
+  if (s.source && DATA_SOURCES.some(d => d.id === s.source)) S.source = s.source;
+  if (s.pollMs) S.pollMs = Math.min(LIMITS.pollMs.max, Math.max(LIMITS.pollMs.min, s.pollMs));
+  if (s.refreshMs) S.refreshMs = Math.min(LIMITS.refreshMs.max, Math.max(LIMITS.refreshMs.min, s.refreshMs));
+}
+
+// ---------------------------------------------------------------- UTC hodiny
+setInterval(() => {
+  const d = new Date();
+  $('utc').textContent = d.toISOString().substr(11, 8);
+  $('utcd').textContent = 'UTC · LOC ' + d.toTimeString().substr(0, 5);
+}, 1000);
+
+// ---------------------------------------------------------------- INIT
+function syncLabels() {
+  $('hzVal').textContent = $('horizon').value + ' min';
+  $('stepVal').textContent = $('step').value + ' s';
+  $('tolVal').textContent = (+$('tol').value / 100).toFixed(2) + '°';
+  $('volVal').textContent = $('alarmVol').value + '%';
+  $('alarmThVal').textContent = $('alarmTh').value + ' s';
+  $('pollRate').value = S.pollMs; $('pollRateVal').textContent = (S.pollMs / 1000).toFixed(0) + ' s';
+  $('refreshRate').value = S.refreshMs;
+  const s = S.refreshMs / 1000;
+  $('refreshRateVal').textContent = s.toFixed(2).replace(/\.?0+$/, '') + ' s · ' + (1 / s).toFixed(1) + ' fps';
+}
+
+function init() {
+  applySettings(store.loadSettings());
+  buildSourceButtons();
+  syncLabels();
+  $('navBody').classList.add('disabled-look');
+  renderPosList();
+  updateNotifStatus();
+  updateMoonReadout();
+  updateZoneReadout();
+  const view = { selected: null, tolDeg: readOpt().tolDeg, minSkyEl: DEFAULTS.minSkyEl };
+  drawSky($('sky'), updateMoonReadout(), [], [], view);
+  drawRadar($('radar'), readObs(), null, [], [], view);
+  setPill('', 'STANDBY');
+  // překreslení při návratu na záložku
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && S.running) draw(); });
+}
+
+init();
+
+
+</script>
 </body>
 </html>
