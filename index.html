@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07090c">
+<meta name="description" content="Predikce přeletů letadel přes lunární kotouč z konkrétního stanoviště.">
+<title>LUNA TRANSIT · Predikce přeletů letadel přes Měsíc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='40' fill='%23ffe9b0'/></svg>">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div id="radarTip"></div>
+
+  <!-- ============ ALARM OVERLAY ============ -->
+  <div id="alarm">
+    <div class="alarm-box">
+      <div class="alarm-icon">🌕</div>
+      <div class="alarm-title">Přelet detekován!</div>
+      <div class="alarm-cs" id="alarmCs">—</div>
+      <div class="alarm-detail" id="alarmDetail">—</div>
+      <button class="alarm-dismiss" id="alarmDismiss">■ Vypnout alarm</button>
+      <br>
+      <button class="alarm-mute" id="alarmMute">Ztlumit zvuk (overlay zůstane)</button>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 100 100">
+          <defs><radialGradient id="mg" cx="38%" cy="35%"><stop offset="0%" stop-color="#fff7e0"/><stop offset="70%" stop-color="#ffe9b0"/><stop offset="100%" stop-color="#caa45e"/></radialGradient></defs>
+          <circle cx="50" cy="50" r="34" fill="url(#mg)"/>
+          <circle cx="38" cy="40" r="5" fill="#d9b878" opacity=".5"/>
+          <circle cx="60" cy="58" r="7" fill="#d9b878" opacity=".4"/>
+          <circle cx="56" cy="36" r="3" fill="#d9b878" opacity=".5"/>
+          <path d="M12 62 L88 44" stroke="#35e0d8" stroke-width="2.4" stroke-linecap="round" opacity=".95"/>
+          <path d="M70 47 l10 -3 -6 7 z" fill="#35e0d8"/>
+          <path d="M58 49.7 l5 1.5 M50 51.6 l5 1.5" stroke="#35e0d8" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+        </svg>
+      </div>
+      <div>
+        <h1>LUNA<span>·</span>TRANSIT</h1>
+        <div class="sub">Predikce přeletů linek přes lunární kotouč</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="t" id="utc">--:--:--</div>
+      <div class="d" id="utcd">UTC · LOC --:--</div>
+    </div>
+  </header>
+
+  <div class="statusbar">
+    <div class="st"><span class="pill" id="pill"></span><span id="mode">STANDBY</span></div>
+    <div class="st">PROVOZ: <b id="acCount">0</b></div>
+    <div class="st">KANDIDÁTI: <b id="candCount">0</b></div>
+    <div class="st">PŘELETY: <b id="hitCount" style="color:var(--green)">0</b></div>
+    <div class="spacer"></div>
+    <div class="st">ZDROJ: <b id="src">—</b></div>
+    <div class="st">DALŠÍ POLL: <span class="countdown" id="cd">—</span></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- ============ LEVÝ SLOUPEC ============ -->
+    <div class="col-left">
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Stanoviště pozorovatele</div>
+        <div class="panel-b">
+          <div class="row2">
+            <div class="field"><label>Zem. šířka °N</label><input type="text" inputmode="decimal" id="lat" value="50.0755"></div>
+            <div class="field"><label>Zem. délka °E</label><input type="text" inputmode="decimal" id="lon" value="14.4378"></div>
+          </div>
+          <div class="field"><label>Nadm. výška pozorovatele (m)</label><input type="number" id="elev" value="200"></div>
+          <div class="btn-row">
+            <button class="btn ghost" id="geo">⌖ Moje poloha</button>
+            <button class="btn ghost" id="setNow">⟳ Přepočítat</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Parametry predikce</div>
+        <div class="panel-b">
+          <div class="field">
+            <label>Výhled do budoucna <span class="rng-val" id="hzVal">20 min</span></label>
+            <input type="range" id="horizon" min="2" max="60" step="1" value="20">
+          </div>
+          <div class="field">
+            <label>Krok výpočtu <span class="rng-val" id="stepVal">5 s</span></label>
+            <input type="range" id="step" min="1" max="15" step="1" value="5">
+          </div>
+          <div class="field">
+            <label>Tolerance od středu kotouče <span class="rng-val" id="tolVal">0.25°</span></label>
+            <input type="range" id="tol" min="0" max="100" step="5" value="25">
+            <div class="note" style="margin-top:4px">Poloměr Měsíce ≈ 0.26°. Tolerance 0 = jen průchod přímo kotoučem.</div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Min. hladina (m)</label><input type="number" id="hmin" value="600"></div>
+            <div class="field"><label>Max. hladina (m)</label><input type="number" id="hmax" value="13000"></div>
+          </div>
+          <div class="field">
+            <label>Max. rychlost letadla (km/h)</label><input type="number" id="vmax" value="950">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Výkon · frekvence aktualizace</div>
+        <div class="panel-b">
+          <div class="field">
+            <label>Obnovení zobrazení (poloh letadel) <span class="rng-val" id="refreshRateVal">1 s · 1.0 fps</span></label>
+            <input type="range" id="refreshRate" min="250" max="5000" step="250" value="1000">
+            <div class="note" style="margin-top:4px">Jak často se přepočítají a překreslí dráhy. <b>Nižší fps = nižší zátěž CPU.</b> Pro plynulost zvyš, pro úsporu sniž.</div>
+          </div>
+          <div class="field">
+            <label>Interval dotazu na data <span class="rng-val" id="pollRateVal">5 s</span></label>
+            <input type="range" id="pollRate" min="1000" max="30000" step="1000" value="5000">
+            <div class="note" style="margin-top:4px">Jak často se stahují data z API (limit ~1×/s). Mezi dotazy se polohy dopočítávají.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Uložené pozice</div>
+        <div class="panel-b">
+          <div class="row2">
+            <div class="field"><label>Název</label><input type="text" id="posName" placeholder="Moje střecha…" maxlength="30"></div>
+            <div class="field"><label>&nbsp;</label><button class="btn" id="posSave" style="margin-top:0">💾 Uložit</button></div>
+          </div>
+          <div class="pos-list" id="posList"><div class="pos-empty">Žádné uložené pozice</div></div>
+          <div class="note" style="margin-top:8px">Pozice i nastavení se ukládají lokálně ve tvém prohlížeči (localStorage). Nic se nikam neodesílá.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Alarm · notifikace</div>
+        <div class="panel-b">
+          <div class="note" style="margin-bottom:10px">Při detekci přeletu zazní zvukový alarm a zobrazí se overlay — aktivní i když je záložka na pozadí.</div>
+          <button class="btn ghost" id="notifReq">🔔 Povolit notifikace</button>
+          <div class="notif-row">
+            <span class="notif-status" id="notifStatus">Stav: nezjištěn</span>
+          </div>
+          <div class="field" style="margin-top:12px">
+            <label>Hlasitost alarmu <span class="rng-val" id="volVal">70%</span></label>
+            <input type="range" id="alarmVol" min="0" max="100" step="5" value="70">
+          </div>
+          <div class="field">
+            <label>Min. čas do přeletu pro alarm (s) <span class="rng-val" id="alarmThVal">120 s</span></label>
+            <input type="range" id="alarmTh" min="10" max="600" step="10" value="120">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Datový zdroj</div>
+        <div class="panel-b">
+          <div class="seg" id="srcSeg"><!-- tlačítka generuje JS z config.js --></div>
+          <div class="field" style="margin-top:12px">
+            <label>Vlastní proxy URL (volitelné)</label>
+            <input type="text" id="proxy" placeholder="https://muj-proxy/?url=">
+            <div class="note" style="margin-top:5px">Pokud LIVE blokuje CORS, vlož prefix svého proxy (viz poznámka dole).</div>
+          </div>
+          <button class="btn go" id="start">▶ Spustit sledování</button>
+          <button class="btn ghost" id="stop" style="margin-top:8px;display:none">■ Zastavit</button>
+          <div class="warn" id="warn"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ STŘEDNÍ SLOUPEC ============ -->
+    <div class="col-mid">
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Klenba oblohy · azimut / elevace</div>
+        <div class="skywrap"><svg id="sky" viewBox="0 0 560 560"></svg></div>
+        <div class="domefoot">
+          <span class="leg"><i style="background:var(--moon);box-shadow:0 0 8px var(--moon)"></i>Měsíc</span>
+          <span class="leg"><i style="background:var(--cyan)"></i>Letadlo</span>
+          <span class="leg"><i style="background:var(--green)"></i>Přelet</span>
+          <span class="leg"><i style="background:var(--amber);border-radius:0"></i>Dráha letu</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Radarová mapa · lokální okolí</div>
+        <div style="padding:8px"><svg id="radar" viewBox="0 0 560 560"></svg></div>
+      </div>
+    </div>
+
+    <!-- ============ PRAVÝ SLOUPEC ============ -->
+    <div class="col-right">
+      <div class="panel" id="navPanel" style="border-color:var(--amber-d)">
+        <div class="panel-h" style="justify-content:space-between">
+          <span style="display:flex;align-items:center;gap:9px"><span class="dot"></span>Naváděcí korekce</span>
+          <label class="switch"><input type="checkbox" id="navOn"><span class="slider"></span></label>
+        </div>
+        <div class="panel-b" id="navBody">
+          <div class="btn-row" style="margin-top:0">
+            <button class="btn ghost" id="gpsLive">📍 Živé GPS</button>
+            <button class="btn ghost" id="gpsStop" style="display:none">■ Stop GPS</button>
+          </div>
+          <div class="notif-row"><span class="notif-status" id="gpsStatus">GPS: vypnuto</span></div>
+          <div id="navList" style="margin-top:10px"><div class="pos-empty">Zapni přepínač a sledování — zobrazí se letadla do 2° odchylky a kam se přesunout.</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Měsíc · efemeridy</div>
+        <div class="panel-b">
+          <div class="ro"><span class="k">Azimut</span><span class="v cy" id="mAz">—</span></div>
+          <div class="ro"><span class="k">Elevace</span><span class="v cy" id="mEl">—</span></div>
+          <div class="ro"><span class="k">Úhl. průměr</span><span class="v" id="mDia">—</span></div>
+          <div class="ro"><span class="k">Vzdálenost</span><span class="v" id="mDist">—</span></div>
+          <div class="ro"><span class="k">Fáze</span><span class="v am" id="mPhase">—</span></div>
+          <div class="ro"><span class="k">Vých./záp. směr</span><span class="v" id="mDrift">—</span></div>
+          <div class="ro"><span class="k" id="mEventK">Východ / západ</span><span class="v am" id="mEvent">—</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Vypočtená zóna dotazu</div>
+        <div class="panel-b">
+          <div class="corridor-info" id="zone">
+            <div class="note">Zóna se spočítá z polohy Měsíce, hladiny letadel a výhledu — dotazuje se jen relevantní výsek oblohy, ne celá Evropa.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Predikované přelety</div>
+        <div class="scrolly">
+          <table class="tbl">
+            <thead><tr><th>Spoj</th><th>Za</th><th>Min. odstup</th><th>Hladina</th><th>Stav</th></tr></thead>
+            <tbody id="rows"><tr><td colspan="5" class="empty">Spusť sledování pro výpočet…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel" style="margin-top:4px">
+    <div class="panel-h"><span class="dot"></span>Poznámky · CORS · nasazení</div>
+    <div class="panel-b note">
+      <b>Datový zdroj:</b> aplikace volá veřejné API <a href="https://airplanes.live" target="_blank" rel="noopener">airplanes.live</a> (případně zrcadlo <a href="https://adsb.one" target="_blank" rel="noopener">adsb.one</a>) — zdarma, bez klíče, limit ~1 dotaz/s. Pokud prohlížeč zablokuje požadavek kvůli CORS, máš tři možnosti:
+      &nbsp;(1) přepnout na druhý LIVE zdroj;
+      &nbsp;(2) přepnout na <b>SIMULACI</b> a otestovat celou logiku na syntetickém provozu (jeden spoj je nastaven tak, aby Měsícem prolétl);
+      &nbsp;(3) vlož <b>vlastní proxy</b> — např. <code>https://corsproxy.io/?url=</code> nebo vlastní mini-proxy — a vlož jeho prefix do pole výše.
+      <br><br>
+      <b>Nasazení:</b> jde o statické soubory (HTML + CSS + JS moduly). Nahraj celou složku na libovolný statický hosting (GitHub Pages, Netlify, Vercel, vlastní web…). Protože používá ES moduly, musí být <b>servírováno přes http(s)</b>, ne otevřeno přímo z disku (file://).
+      <br><br>
+      <b>Algoritmus:</b> poloha Měsíce se počítá lokálně (zkrácená lunární teorie + topocentrická paralaxa, přesnost ~1′). Pro každé letadlo se z reportovaného kurzu a rychlosti extrapoluje přímá dráha; v krocích se porovnává úhlový odstup od středu Měsíce (jeho poloha je v každém kroku předpočítaná a sdílená pro všechna letadla — kvůli výkonu). Přelet = odstup &lt; (poloměr kotouče + tolerance).
+    </div>
+  </div>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
