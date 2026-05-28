@@ -72,6 +72,27 @@ h1 span{color:var(--amber)}
 @media(max-width:1180px){.grid{grid-template-columns:1fr 1fr}.col-mid{grid-column:1/-1;order:-1}}
 @media(max-width:760px){.grid{grid-template-columns:1fr}.col-mid{order:0}}
 
+/* compact launch bar (under header) */
+.launch{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:10px 14px;margin-bottom:14px;
+  background:linear-gradient(180deg,var(--panel2),var(--panel));
+  border:1px solid var(--line2);border-radius:9px;
+  box-shadow:0 4px 18px rgba(0,0,0,.35);
+}
+.launch-src{display:flex;align-items:center;gap:10px;flex:1;min-width:240px}
+.launch-lbl{font-family:var(--disp);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--dim);flex:none}
+.launch .seg.compact{flex:1;margin-top:0}
+.launch .seg.compact button{padding:8px 8px;font-size:10.5px}
+.launch-actions{display:flex;gap:8px;flex:none}
+.launch-go,.launch-stop{padding:9px 18px;font-size:12px;letter-spacing:1.8px;min-width:160px;width:auto;margin:0}
+@media(max-width:620px){
+  .launch{flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px}
+  .launch-src{flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+  .launch-actions{width:100%}
+  .launch-go,.launch-stop{flex:1;min-width:0}
+}
+
 .panel{
   background:linear-gradient(180deg,var(--panel),var(--bg2));
   border:1px solid var(--line);border-radius:10px;
@@ -130,6 +151,9 @@ input[type=range]{width:100%;accent-color:var(--amber);height:24px;margin-top:4p
 .leg{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--dim);letter-spacing:1px}
 .leg i{width:11px;height:11px;border-radius:50%;display:inline-block}
 #radar{width:100%;max-width:560px;height:auto;display:block;margin:0 auto}
+.radar-ctrl{padding:10px 14px 4px;border-bottom:1px solid var(--line)}
+.radar-ctrl label{display:block;margin-bottom:4px}
+.radar-ctrl input[type=range]{margin-top:2px}
 
 /* zone readout */
 .zrow{display:flex;justify-content:space-between;padding:4px 0}
@@ -246,6 +270,17 @@ code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:
 .nav-card .nc-foot b{color:var(--green)}
 .nav-card.disabled-look{opacity:.5}
 
+/* moon trajectory chart */
+.moon-traj-wrap{padding:14px}
+#moonTraj{width:100%;height:auto;display:block;max-height:340px}
+.mt-legend{display:flex;flex-wrap:wrap;gap:18px;padding:12px 6px 6px;justify-content:center}
+.mt-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:10px;padding:10px;
+  background:#08111a;border:1px solid var(--line);border-radius:7px}
+.mt-stat{display:flex;flex-direction:column;gap:3px;padding:4px 8px}
+.mt-stat .k{font-size:9.5px;color:var(--dim);letter-spacing:1.2px;text-transform:uppercase}
+.mt-stat .v{font-family:var(--disp);font-size:14px;color:var(--txt);font-weight:600}
+.mt-stat .v.cy{color:var(--cyan)}.mt-stat .v.am{color:var(--amber)}.mt-stat .v.mn{color:var(--moon)}
+
 /* ==========================================================================
    RESPONSIVE — mobil / tablet
    ========================================================================== */
@@ -318,6 +353,19 @@ code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:
       <div class="d" id="utcd">UTC · LOC --:--</div>
     </div>
   </header>
+
+  <!-- ============ KOMPAKTNÍ OVLÁDÁNÍ SLEDOVÁNÍ ============ -->
+  <div class="launch">
+    <div class="launch-src">
+      <span class="launch-lbl">Zdroj</span>
+      <div class="seg compact" id="srcSeg"></div>
+    </div>
+    <div class="launch-actions">
+      <button class="btn launch-go" id="start">▶ Spustit sledování</button>
+      <button class="btn ghost launch-stop" id="stop" style="display:none">■ Zastavit</button>
+    </div>
+  </div>
+  <div class="warn" id="warn" style="margin-top:-8px;margin-bottom:14px"></div>
 
   <div class="statusbar">
     <div class="st"><span class="pill" id="pill"></span><span id="mode">STANDBY</span></div>
@@ -420,21 +468,6 @@ code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:
           </div>
         </div>
       </div>
-
-      <div class="panel">
-        <div class="panel-h"><span class="dot"></span>Datový zdroj</div>
-        <div class="panel-b">
-          <div class="seg" id="srcSeg"><!-- tlačítka generuje JS z config.js --></div>
-          <div class="field" style="margin-top:12px">
-            <label>Vlastní proxy URL (volitelné)</label>
-            <input type="text" id="proxy" placeholder="https://muj-proxy/?url=">
-            <div class="note" style="margin-top:5px">Pokud LIVE blokuje CORS, vlož prefix svého proxy (viz poznámka dole).</div>
-          </div>
-          <button class="btn go" id="start">▶ Spustit sledování</button>
-          <button class="btn ghost" id="stop" style="margin-top:8px;display:none">■ Zastavit</button>
-          <div class="warn" id="warn"></div>
-        </div>
-      </div>
     </div>
 
     <!-- ============ STŘEDNÍ SLOUPEC ============ -->
@@ -452,6 +485,10 @@ code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:
 
       <div class="panel">
         <div class="panel-h"><span class="dot"></span>Radarová mapa · lokální okolí</div>
+        <div class="radar-ctrl">
+          <label>Max. zobrazená vzdálenost <span class="rng-val" id="radarRangeVal">200 km</span></label>
+          <input type="range" id="radarRange" min="50" max="500" step="10" value="200">
+        </div>
         <div style="padding:8px"><svg id="radar" viewBox="0 0 560 560"></svg></div>
       </div>
     </div>
@@ -509,12 +546,27 @@ code{background:#0a141c;border:1px solid var(--line2);border-radius:4px;padding:
   </div>
 
   <div class="panel" style="margin-top:4px">
+    <div class="panel-h"><span class="dot"></span>Trajektorie Měsíce — dnešní den
+      <span id="mtSubtitle" style="margin-left:auto;font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:none">—</span>
+    </div>
+    <div class="panel-b moon-traj-wrap">
+      <svg id="moonTraj" viewBox="0 0 960 320"></svg>
+      <div class="mt-legend">
+        <span class="leg"><i style="background:var(--moon);box-shadow:0 0 8px var(--moon)"></i>Měsíc nad obzorem</span>
+        <span class="leg"><i style="background:var(--dim);opacity:.5"></i>Pod obzorem</span>
+        <span class="leg"><i style="background:var(--cyan);width:3px;height:14px;border-radius:0"></i>Aktuální čas</span>
+        <span class="leg"><i style="background:var(--amber);border-radius:0"></i>Východ / západ</span>
+      </div>
+      <div class="mt-stats" id="mtStats"></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:4px">
     <div class="panel-h"><span class="dot"></span>Poznámky · CORS · nasazení</div>
     <div class="panel-b note">
-      <b>Datový zdroj:</b> aplikace volá veřejné API <a href="https://airplanes.live" target="_blank" rel="noopener">airplanes.live</a> (případně zrcadlo <a href="https://adsb.one" target="_blank" rel="noopener">adsb.one</a>) — zdarma, bez klíče, limit ~1 dotaz/s. Pokud prohlížeč zablokuje požadavek kvůli CORS, máš tři možnosti:
+      <b>Datový zdroj:</b> aplikace volá veřejné API <a href="https://airplanes.live" target="_blank" rel="noopener">airplanes.live</a> (případně zrcadlo <a href="https://adsb.one" target="_blank" rel="noopener">adsb.one</a>) — zdarma, bez klíče, limit ~1 dotaz/s. Pokud prohlížeč zablokuje požadavek kvůli CORS, máš dvě možnosti:
       &nbsp;(1) přepnout na druhý LIVE zdroj;
-      &nbsp;(2) přepnout na <b>SIMULACI</b> a otestovat celou logiku na syntetickém provozu (jeden spoj je nastaven tak, aby Měsícem prolétl);
-      &nbsp;(3) vlož <b>vlastní proxy</b> — např. <code>https://corsproxy.io/?url=</code> nebo vlastní mini-proxy — a vlož jeho prefix do pole výše.
+      &nbsp;(2) přepnout na <b>SIMULACI</b> a otestovat celou logiku na syntetickém provozu (jeden spoj je nastaven tak, aby Měsícem prolétl).
       <br><br>
       <b>Nasazení:</b> jde o statické soubory (HTML + CSS + JS moduly). Nahraj celou složku na libovolný statický hosting (GitHub Pages, Netlify, Vercel, vlastní web…). Protože používá ES moduly, musí být <b>servírováno přes http(s)</b>, ne otevřeno přímo z disku (file://).
       <br><br>
@@ -1056,36 +1108,40 @@ function drawSky(svg, moon, aircraft, hits, view) {
 
   const isCand = a => a.sep != null && a.sep < ((a.mDiam || 0.52) / 2 + tolDeg) * 4;
 
-  // Dráhy letu — jen kandidáti/přelet/vybrané (odplevelení)
+  // Dráhy letu — zobrazujeme pro KAŽDÉ letadlo nad obzorem
   aircraft.forEach(a => {
-    const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected;
-    if (!(isHit || isSel || isCand(a))) return;
-    if (a.el < -2 || a.predEl == null || a.predEl < -2) return;
+    if (a.el < 0 || a.predEl == null || a.predEl < -2) return;
+    const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected, cand = isCand(a);
     const [x1, y1] = skyXY(cx, cy, R, a.az, Math.max(a.el, 0));
     const [x2, y2] = skyXY(cx, cy, R, a.predAz, Math.max(a.predEl, 0));
-    svg.appendChild(el('line', {
-      x1, y1, x2, y2, stroke: isHit ? '#5ee08a' : '#c4761c',
-      'stroke-width': isHit ? 2 : 1.4, 'stroke-dasharray': isHit ? '' : '3 3', opacity: isHit ? 0.9 : 0.55,
-    }));
+    let stroke, sw, opacity, dasharray;
+    if (isHit)      { stroke = '#5ee08a'; sw = 2;   opacity = 0.9; dasharray = ''; }
+    else if (isSel) { stroke = '#ff9d2f'; sw = 1.8; opacity = 0.85; dasharray = ''; }
+    else if (cand)  { stroke = '#c4761c'; sw = 1.4; opacity = 0.65; dasharray = '3 3'; }
+    else            { stroke = '#35e0d8'; sw = 1;   opacity = 0.35; dasharray = '2 3'; }
+    svg.appendChild(el('line', { x1, y1, x2, y2, stroke, 'stroke-width': sw, 'stroke-dasharray': dasharray, opacity }));
   });
 
-  // Letadla
+  // Letadla — KAŽDÉ letadlo nad obzorem dostane značku i callsign
   aircraft.forEach(a => {
     if (a.el < 0) return;
     const isHit = hits.some(h => h.cs === a.cs), isSel = a.cs === selected, cand = isCand(a);
-    const climbingIn = a.predEl != null && a.predEl > a.el;
-    if (a.el < minSkyEl && !(isHit || isSel || cand || climbingIn)) return;
     const [x, y] = skyXY(cx, cy, R, a.az, a.el);
-    const col = isHit ? '#5ee08a' : (isSel ? '#ff9d2f' : '#35e0d8');
+    const col = isHit ? '#5ee08a' : (isSel ? '#ff9d2f' : (cand ? '#c4761c' : '#35e0d8'));
     if (isSel) svg.appendChild(el('circle', { cx: x, cy: y, r: 13, fill: 'rgba(255,157,47,.15)', stroke: '#ff9d2f', 'stroke-width': 1.5 }));
     if (isHit) svg.appendChild(el('circle', { cx: x, cy: y, r: 9, fill: 'none', stroke: '#5ee08a', 'stroke-width': 1.2, opacity: 0.7 }));
     const g = el('g', { transform: `translate(${x},${y}) rotate(${a.trk})` });
     g.appendChild(el('path', { d: 'M0,-6 L4,5 L0,2 L-4,5 Z', fill: col, stroke: '#03110f', 'stroke-width': 0.5 }));
     svg.appendChild(g);
-    if (isHit || isSel || cand || a.el >= 22) {
-      const lab = el('text', { x: x + 8, y: y + 3, fill: col, 'font-size': 9.5, 'font-weight': isSel ? 600 : 400, 'font-family': 'IBM Plex Mono' });
-      lab.textContent = a.cs; svg.appendChild(lab);
-    }
+    // Callsign — pro každé letadlo, s mírnou odlišnou opacitou podle důležitosti
+    const labOpacity = (isHit || isSel || cand) ? 1 : 0.75;
+    const labWeight = isSel ? 600 : (isHit || cand ? 500 : 400);
+    const lab = el('text', {
+      x: x + 8, y: y + 3, fill: col, 'font-size': 9.5,
+      'font-weight': labWeight, 'font-family': 'IBM Plex Mono', opacity: labOpacity,
+    });
+    lab.textContent = a.cs;
+    svg.appendChild(lab);
   });
 
   // Měsíc s fází
@@ -1108,10 +1164,13 @@ function drawSky(svg, moon, aircraft, hits, view) {
 }
 
 function drawRadar(svg, obs, zone, aircraft, hits, view) {
-  const { selected } = view;
+  const { selected, userRangeKm } = view;
   svg.innerHTML = '';
   const cx = 280, cy = 280, R = 250;
-  const rangeKm = Math.max(80, (zone ? (zone.radius + haversine(obs.lat, obs.lon, zone.center[0], zone.center[1])) / 1000 : 150) * 1.15);
+  // userRangeKm (z slideru) má prioritu — vizuální limit. Bez něj auto.
+  const rangeKm = userRangeKm
+    ? userRangeKm
+    : Math.max(80, (zone ? (zone.radius + haversine(obs.lat, obs.lon, zone.center[0], zone.center[1])) / 1000 : 150) * 1.15);
   const kmToPx = R / rangeKm;
   svg.appendChild(el('rect', { x: 30, y: 30, width: 500, height: 500, fill: '#060a0e', stroke: '#1d2731', rx: 6 }));
   const ringStep = rangeKm <= 100 ? 25 : (rangeKm <= 300 ? 50 : 100);
@@ -1157,6 +1216,186 @@ function drawRadar(svg, obs, zone, aircraft, hits, view) {
     if (isHit) svg.appendChild(el('circle', { cx: x, cy: y, r: 8, fill: 'none', stroke: '#5ee08a', opacity: 0.7 }));
   });
   return radarPts; // volající si je uloží pro hover/klik
+}
+
+// ============================================================================
+//  drawMoonTrajectory — graf elevace Měsíce nad horizontem v průběhu dne
+//  X = čas (lokální), Y = elevace [°]. Křivka pokrývá rise → set v rámci dne.
+// ============================================================================
+function drawMoonTrajectory(svg, obs, now) {
+  svg.innerHTML = '';
+  if (!obs || isNaN(obs.lat)) return null;
+
+  // Lokální půlnoc dne, který obsahuje "now"
+  const day0 = new Date(now); day0.setHours(0, 0, 0, 0);
+  const day1 = new Date(day0.getTime() + 24 * 3600 * 1000);
+
+  // Sample každé 2 minuty přes celý den (720 vzorků)
+  const STEP_MIN = 2;
+  const samples = [];
+  for (let m = 0; m <= 1440; m += STEP_MIN) {
+    const t = new Date(day0.getTime() + m * 60000);
+    const mt = moonTopo(t, obs.lat, obs.lon);
+    samples.push({ t, ms: t.getTime(), el: mt.el, az: mt.az });
+  }
+
+  // Najdi rise/set events (zero-crossings horizontu se zpřesněním bisekcí)
+  const h0 = -0.83; // standardní refrakce + paralaxa pro Měsíc je ~+0.13, ale -0.83 je obvykle dobrá aproximace
+  const events = [];
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1], b = samples[i];
+    if ((a.el - h0 < 0) !== (b.el - h0 < 0)) {
+      // bisekce
+      let lo = a.ms, hi = b.ms, flo = a.el - h0;
+      for (let k = 0; k < 18; k++) {
+        const mid = (lo + hi) / 2;
+        const fm = moonTopo(new Date(mid), obs.lat, obs.lon).el - h0;
+        if ((flo < 0) !== (fm < 0)) hi = mid; else { lo = mid; flo = fm; }
+      }
+      const ms = (lo + hi) / 2;
+      const rising = (moonTopo(new Date(ms + 60000), obs.lat, obs.lon).el - h0) > 0;
+      events.push({ ms, kind: rising ? 'rise' : 'set' });
+    }
+  }
+
+  // Plocha grafu
+  const W = 960, H = 320;
+  const PAD = { l: 50, r: 24, t: 18, b: 38 };
+  const innerW = W - PAD.l - PAD.r, innerH = H - PAD.t - PAD.b;
+  const elMin = -30, elMax = 90;
+  const xOf = ms => PAD.l + (ms - day0.getTime()) / (day1.getTime() - day0.getTime()) * innerW;
+  const yOf = el => PAD.t + (1 - (el - elMin) / (elMax - elMin)) * innerH;
+
+  // Pozadí
+  svg.appendChild(el('rect', { x: PAD.l, y: PAD.t, width: innerW, height: innerH,
+    fill: '#060a0e', stroke: '#1d2731', 'stroke-width': 1, rx: 4 }));
+
+  // Pásmo pod horizontem (jemně tmavší)
+  const horY = yOf(0);
+  svg.appendChild(el('rect', { x: PAD.l, y: horY, width: innerW, height: PAD.t + innerH - horY,
+    fill: 'rgba(0,0,0,.35)' }));
+
+  // Gridlines — vodorovné (elevace po 30°)
+  for (let e = elMin; e <= elMax; e += 30) {
+    const y = yOf(e);
+    svg.appendChild(el('line', { x1: PAD.l, y1: y, x2: PAD.l + innerW, y2: y,
+      stroke: e === 0 ? '#5a6b76' : '#13202b', 'stroke-width': e === 0 ? 1.4 : 1,
+      'stroke-dasharray': e === 0 ? '' : '2 4' }));
+    const t = el('text', { x: PAD.l - 8, y: y + 4, fill: '#6b7d8a', 'font-size': 10,
+      'font-family': 'IBM Plex Mono', 'text-anchor': 'end' });
+    t.textContent = e + '°'; svg.appendChild(t);
+  }
+  // Popisek "horizont"
+  const horLbl = el('text', { x: PAD.l + innerW - 6, y: horY - 4, fill: '#7a8b96',
+    'font-size': 10, 'font-family': 'IBM Plex Mono', 'text-anchor': 'end' });
+  horLbl.textContent = 'horizont'; svg.appendChild(horLbl);
+
+  // Gridlines — svislé (každé 3 hodiny)
+  for (let h = 0; h <= 24; h += 3) {
+    const ms = day0.getTime() + h * 3600 * 1000;
+    const x = xOf(ms);
+    svg.appendChild(el('line', { x1: x, y1: PAD.t, x2: x, y2: PAD.t + innerH,
+      stroke: '#13202b', 'stroke-width': 1, 'stroke-dasharray': '2 4' }));
+    const t = el('text', { x, y: PAD.t + innerH + 18, fill: '#6b7d8a', 'font-size': 10,
+      'font-family': 'IBM Plex Mono', 'text-anchor': 'middle' });
+    t.textContent = (h < 10 ? '0' : '') + h + ':00'; svg.appendChild(t);
+  }
+
+  // Křivka — barvíme podle nad/pod horizontem
+  // Sestavíme polyline pro plnou křivku (pod obzorem tlumeně)
+  const fullPts = samples.map(s => xOf(s.ms).toFixed(1) + ',' + yOf(s.el).toFixed(1)).join(' ');
+  svg.appendChild(el('polyline', { points: fullPts, fill: 'none',
+    stroke: '#6b7d8a', 'stroke-width': 1.2, 'stroke-dasharray': '3 3', opacity: 0.45 }));
+
+  // Aktivní (nad horizontem) — segmenty
+  let seg = [];
+  const flushSeg = () => {
+    if (seg.length < 2) { seg = []; return; }
+    const pts = seg.map(s => xOf(s.ms).toFixed(1) + ',' + yOf(s.el).toFixed(1)).join(' ');
+    // Plocha pod křivkou (světle nažloutle)
+    const first = seg[0], last = seg[seg.length - 1];
+    const area = el('polygon', {
+      points: pts + ' ' + xOf(last.ms).toFixed(1) + ',' + yOf(0).toFixed(1) + ' '
+                + xOf(first.ms).toFixed(1) + ',' + yOf(0).toFixed(1),
+      fill: 'rgba(255,233,176,.08)', stroke: 'none',
+    });
+    svg.appendChild(area);
+    // Vlastní křivka
+    svg.appendChild(el('polyline', { points: pts, fill: 'none', stroke: '#ffe9b0',
+      'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      style: 'filter:drop-shadow(0 0 5px rgba(255,233,176,.55))' }));
+    seg = [];
+  };
+  samples.forEach(s => {
+    if (s.el > h0) seg.push(s);
+    else flushSeg();
+  });
+  flushSeg();
+
+  // Maximum elevace (kulminace) — pro segmenty nad horizontem
+  let culm = null;
+  samples.forEach(s => {
+    if (s.el > h0 && (!culm || s.el > culm.el)) culm = s;
+  });
+  if (culm) {
+    const cx = xOf(culm.ms), cy = yOf(culm.el);
+    svg.appendChild(el('circle', { cx, cy, r: 4, fill: '#ffe9b0',
+      stroke: '#caa45e', 'stroke-width': 1.2,
+      style: 'filter:drop-shadow(0 0 6px rgba(255,233,176,.7))' }));
+    const lbl = el('text', { x: cx, y: cy - 10, fill: '#ffe9b0', 'font-size': 11,
+      'font-family': 'Chakra Petch', 'font-weight': 600, 'text-anchor': 'middle' });
+    lbl.textContent = 'kulminace · ' + culm.el.toFixed(1) + '°';
+    svg.appendChild(lbl);
+  }
+
+  // Rise/set markery
+  events.forEach(ev => {
+    const x = xOf(ev.ms), y = yOf(0);
+    svg.appendChild(el('line', { x1: x, y1: PAD.t, x2: x, y2: PAD.t + innerH,
+      stroke: '#ff9d2f', 'stroke-width': 1.5, 'stroke-dasharray': '4 3', opacity: 0.7 }));
+    svg.appendChild(el('circle', { cx: x, cy: y, r: 4.5, fill: '#ff9d2f', stroke: '#03110f', 'stroke-width': 1 }));
+    const tm = new Date(ev.ms);
+    const tStr = tm.toLocaleTimeString('cs', { hour: '2-digit', minute: '2-digit' });
+    const arrow = ev.kind === 'rise' ? '↑' : '↓';
+    const lbl = el('text', { x: x + (ev.kind === 'rise' ? 6 : -6),
+      y: PAD.t + 14, fill: '#ff9d2f', 'font-size': 11,
+      'font-family': 'Chakra Petch', 'font-weight': 600,
+      'text-anchor': ev.kind === 'rise' ? 'start' : 'end' });
+    lbl.textContent = arrow + ' ' + tStr;
+    svg.appendChild(lbl);
+  });
+
+  // Aktuální čas — svislá čára
+  const nowMs = now.getTime();
+  if (nowMs >= day0.getTime() && nowMs <= day1.getTime()) {
+    const x = xOf(nowMs);
+    svg.appendChild(el('line', { x1: x, y1: PAD.t, x2: x, y2: PAD.t + innerH,
+      stroke: '#35e0d8', 'stroke-width': 2,
+      style: 'filter:drop-shadow(0 0 4px rgba(53,224,216,.55))' }));
+    // Aktuální poloha měsíce
+    const mNow = moonTopo(now, obs.lat, obs.lon);
+    if (mNow.el > -30) {
+      const my = yOf(Math.max(elMin, Math.min(elMax, mNow.el)));
+      svg.appendChild(el('circle', { cx: x, cy: my, r: 5, fill: '#35e0d8',
+        stroke: '#03110f', 'stroke-width': 1.5 }));
+    }
+    const lbl = el('text', { x: x + 6, y: PAD.t + innerH - 8, fill: '#35e0d8',
+      'font-size': 10, 'font-family': 'IBM Plex Mono' });
+    lbl.textContent = 'TEĎ ' + now.toLocaleTimeString('cs', { hour: '2-digit', minute: '2-digit' });
+    svg.appendChild(lbl);
+  }
+
+  // Osy popisky
+  const xLbl = el('text', { x: PAD.l + innerW / 2, y: H - 6, fill: '#8b9aa5',
+    'font-size': 10, 'font-family': 'Chakra Petch', 'letter-spacing': '1.5px',
+    'text-anchor': 'middle' });
+  xLbl.textContent = 'ČAS (LOKÁLNÍ)'; svg.appendChild(xLbl);
+  const yLbl = el('text', { x: 14, y: PAD.t + innerH / 2, fill: '#8b9aa5',
+    'font-size': 10, 'font-family': 'Chakra Petch', 'letter-spacing': '1.5px',
+    'text-anchor': 'middle', transform: `rotate(-90 14 ${PAD.t + innerH / 2})` });
+  yLbl.textContent = 'ELEVACE'; svg.appendChild(yLbl);
+
+  return { events, culm, day0, day1 };
 }
 
 
@@ -1292,6 +1531,48 @@ function updateZoneReadout() {
   return z;
 }
 
+// ---------------------------------------------------------------- trajektorie Měsíce (denní graf)
+function updateMoonTrajectory() {
+  const obs = readObs(); if (isNaN(obs.lat)) return;
+  const now = new Date();
+  const res = drawMoonTrajectory($('moonTraj'), obs, now);
+  if (!res) return;
+  // Subtitle: datum + GPS
+  const dStr = now.toLocaleDateString('cs', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('mtSubtitle').textContent = dStr + ' · ' + obs.lat.toFixed(4) + '°N ' + obs.lon.toFixed(4) + '°E';
+  // Stat boxy
+  const ev = res.events || [];
+  const rise = ev.find(e => e.kind === 'rise');
+  const set  = ev.find(e => e.kind === 'set');
+  const fmt = ms => new Date(ms).toLocaleTimeString('cs', { hour: '2-digit', minute: '2-digit' });
+  const culm = res.culm;
+  const mNow = moonTopo(now, obs.lat, obs.lon);
+  const aboveNow = mNow.el > -0.83;
+
+  // Doba viditelnosti — součet všech segmentů nad horizontem dnes
+  let aboveMs = 0;
+  if (ev.length >= 2 || aboveNow) {
+    // přepočet ze samples (rychlá aproximace): využijeme stejné sample tak jak je
+    const day0 = res.day0, day1 = res.day1;
+    const STEP_MIN = 2;
+    for (let m = 0; m < 1440; m += STEP_MIN) {
+      const t = day0.getTime() + m * 60000;
+      const tm = moonTopo(new Date(t), obs.lat, obs.lon);
+      if (tm.el > -0.83) aboveMs += STEP_MIN * 60000;
+    }
+  }
+  const aboveH = Math.floor(aboveMs / 3600000);
+  const aboveM = Math.round((aboveMs % 3600000) / 60000);
+
+  $('mtStats').innerHTML =
+    `<div class="mt-stat"><span class="k">Východ</span><span class="v am">${rise ? fmt(rise.ms) : '— · žádný dnes'}</span></div>` +
+    `<div class="mt-stat"><span class="k">Západ</span><span class="v am">${set ? fmt(set.ms) : '— · žádný dnes'}</span></div>` +
+    `<div class="mt-stat"><span class="k">Kulminace</span><span class="v mn">${culm ? fmt(culm.ms) + ' · ' + culm.el.toFixed(1) + '°' : '—'}</span></div>` +
+    `<div class="mt-stat"><span class="k">Nyní</span><span class="v ${aboveNow ? 'cy' : ''}">${aboveNow ? mNow.el.toFixed(1) + '° · ' + mNow.az.toFixed(0) + '°' : 'pod obzorem'}</span></div>` +
+    `<div class="mt-stat"><span class="k">Nad obzorem dnes</span><span class="v">${aboveH}h ${aboveM}m</span></div>` +
+    `<div class="mt-stat"><span class="k">Fáze</span><span class="v mn">${mNow.phaseName} (${Math.round(mNow.phaseFrac * 100)}%)</span></div>`;
+}
+
 // ---------------------------------------------------------------- predikce
 function buildEnriched(list, obs, opt) {
   const nowMs = Date.now();
@@ -1331,7 +1612,12 @@ function draw() {
     if (a.sep < thresh * 4) cands.push(a);
     if (a.sep < thresh) hits.push(a);
   });
-  const view = { selected: S.selected, tolDeg: opt.tolDeg, minSkyEl: opt.minSkyEl };
+  const view = {
+    selected: S.selected,
+    tolDeg: opt.tolDeg,
+    minSkyEl: opt.minSkyEl,
+    userRangeKm: +$('radarRange').value || 200,
+  };
   drawSky($('sky'), moon, enriched, hits, view);
   S.radarPts = drawRadar($('radar'), obs, zone, enriched, hits, view);
 
@@ -1424,7 +1710,7 @@ async function poll() {
       S.fetchClientMs = Date.now();
       setPill('demo', 'SIMULACE'); $('src').textContent = 'synth';
     } else {
-      S.aircraft = await fetchLive(S.source, S.obs, z, $('proxy').value.trim());
+      S.aircraft = await fetchLive(S.source, S.obs, z, '');
       S.fetchClientMs = Date.now();
       const src = sourceById(S.source);
       setPill('live', 'LIVE'); $('src').textContent = src.url.split('//')[1].split('/')[0];
@@ -1433,7 +1719,7 @@ async function poll() {
   } catch (e) {
     setPill('err', 'CHYBA SPOJENÍ'); $('src').textContent = '—';
     showWarn('Nepodařilo se načíst LIVE data: ' + e.message +
-      '. Pravděpodobně CORS — zkus jiný LIVE zdroj, SIMULACI, nebo zadej proxy URL.');
+      '. Pravděpodobně CORS — zkus jiný LIVE zdroj nebo SIMULACI.');
   }
   refresh();
   S.nextPoll = Math.round(S.pollMs / 1000);
@@ -1476,7 +1762,17 @@ function stop() {
 $('horizon').oninput = e => { $('hzVal').textContent = e.target.value + ' min'; updateZoneReadout(); persistSoon(); };
 $('step').oninput = e => { $('stepVal').textContent = e.target.value + ' s'; persistSoon(); };
 $('tol').oninput = e => { $('tolVal').textContent = (e.target.value / 100).toFixed(2) + '°'; updateZoneReadout(); persistSoon(); };
-['lat', 'lon', 'elev', 'hmin', 'hmax', 'vmax'].forEach(id => $(id).oninput = () => { updateMoonReadout(); updateZoneReadout(); persistSoon(); });
+['lat', 'lon', 'elev', 'hmin', 'hmax', 'vmax'].forEach(id => $(id).oninput = () => { updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon(); });
+
+// Radar slider — vizuální dosah
+$('radarRange').oninput = e => {
+  $('radarRangeVal').textContent = e.target.value + ' km';
+  if (S.running) draw(); else {
+    const view = { selected: null, tolDeg: readOpt().tolDeg, minSkyEl: DEFAULTS.minSkyEl, userRangeKm: +e.target.value };
+    drawRadar($('radar'), readObs(), null, [], [], view);
+  }
+  persistSoon();
+};
 
 // Výkon — posuvníky frekvencí
 $('pollRate').oninput = e => {
@@ -1510,14 +1806,14 @@ function buildSourceButtons() {
 
 $('start').onclick = start;
 $('stop').onclick = stop;
-$('setNow').onclick = () => { updateMoonReadout(); updateZoneReadout(); };
+$('setNow').onclick = () => { updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); };
 $('geo').onclick = () => {
   if (!navigator.geolocation) { alert('Geolokace není dostupná.'); return; }
   navigator.geolocation.getCurrentPosition(p => {
     $('lat').value = p.coords.latitude.toFixed(4);
     $('lon').value = p.coords.longitude.toFixed(4);
     if (p.coords.altitude) $('elev').value = Math.round(p.coords.altitude);
-    updateMoonReadout(); updateZoneReadout(); persistSoon();
+    updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon();
   }, err => alert('Geolokace selhala: ' + err.message));
 };
 
@@ -1566,7 +1862,7 @@ $('gpsLive').onclick = () => {
     if (altitude != null && !isNaN(altitude)) $('elev').value = Math.round(altitude);
     S.obs = { lat: latitude, lon: longitude, h: parseFloat($('elev').value) || 0 };
     setGpsStatus('GPS: aktivní · ±' + Math.round(accuracy) + ' m', 'ok');
-    updateMoonReadout(); updateZoneReadout();
+    updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory();
     if (S.running) draw();
   }, err => setGpsStatus('GPS chyba: ' + err.message, 'err'),
     { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
@@ -1692,7 +1988,7 @@ function renderPosList() {
     d.innerHTML = `<div><div class="pos-name">${p.name}</div><div class="pos-coords">${p.lat} · ${p.lon} · ${p.elev}m</div></div>
       <button class="pos-del" title="Smazat" aria-label="Smazat">✕</button>`;
     d.querySelector('.pos-del').onclick = e => { e.stopPropagation(); store.removePosition(i); renderPosList(); };
-    d.onclick = () => { $('lat').value = p.lat; $('lon').value = p.lon; $('elev').value = p.elev; updateMoonReadout(); updateZoneReadout(); persistSoon(); };
+    d.onclick = () => { $('lat').value = p.lat; $('lon').value = p.lon; $('elev').value = p.elev; updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon(); };
     wrap.appendChild(d);
   });
 }
@@ -1710,9 +2006,10 @@ function saveCurrentSettings() {
     lat: $('lat').value, lon: $('lon').value, elev: $('elev').value,
     horizon: $('horizon').value, step: $('step').value, tol: $('tol').value,
     hmin: $('hmin').value, hmax: $('hmax').value, vmax: $('vmax').value,
-    source: S.source, proxy: $('proxy').value,
+    source: S.source,
     pollMs: S.pollMs, refreshMs: S.refreshMs,
     alarmVol: $('alarmVol').value, alarmTh: $('alarmTh').value,
+    radarRange: $('radarRange') ? $('radarRange').value : null,
   });
 }
 function applySettings(s) {
@@ -1721,8 +2018,8 @@ function applySettings(s) {
   set('lat', s.lat); set('lon', s.lon); set('elev', s.elev);
   set('horizon', s.horizon); set('step', s.step); set('tol', s.tol);
   set('hmin', s.hmin); set('hmax', s.hmax); set('vmax', s.vmax);
-  set('proxy', s.proxy);
   set('alarmVol', s.alarmVol); set('alarmTh', s.alarmTh);
+  set('radarRange', s.radarRange);
   if (s.source && DATA_SOURCES.some(d => d.id === s.source)) S.source = s.source;
   if (s.pollMs) S.pollMs = Math.min(LIMITS.pollMs.max, Math.max(LIMITS.pollMs.min, s.pollMs));
   if (s.refreshMs) S.refreshMs = Math.min(LIMITS.refreshMs.max, Math.max(LIMITS.refreshMs.min, s.refreshMs));
@@ -1742,6 +2039,7 @@ function syncLabels() {
   $('tolVal').textContent = (+$('tol').value / 100).toFixed(2) + '°';
   $('volVal').textContent = $('alarmVol').value + '%';
   $('alarmThVal').textContent = $('alarmTh').value + ' s';
+  $('radarRangeVal').textContent = $('radarRange').value + ' km';
   $('pollRate').value = S.pollMs; $('pollRateVal').textContent = (S.pollMs / 1000).toFixed(0) + ' s';
   $('refreshRate').value = S.refreshMs;
   const s = S.refreshMs / 1000;
@@ -1757,12 +2055,20 @@ function init() {
   updateNotifStatus();
   updateMoonReadout();
   updateZoneReadout();
-  const view = { selected: null, tolDeg: readOpt().tolDeg, minSkyEl: DEFAULTS.minSkyEl };
+  updateMoonTrajectory();
+  const view = {
+    selected: null,
+    tolDeg: readOpt().tolDeg,
+    minSkyEl: DEFAULTS.minSkyEl,
+    userRangeKm: +$('radarRange').value || 200,
+  };
   drawSky($('sky'), updateMoonReadout(), [], [], view);
   drawRadar($('radar'), readObs(), null, [], [], view);
   setPill('', 'STANDBY');
   // překreslení při návratu na záložku
   document.addEventListener('visibilitychange', () => { if (!document.hidden && S.running) draw(); });
+  // periodická aktualizace grafu trajektorie (každou minutu — kvůli posunu "TEĎ" markeru)
+  setInterval(updateMoonTrajectory, 60000);
 }
 
 init();
