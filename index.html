@@ -662,9 +662,11 @@ const tand  = x => Math.tan(x * D2R);
 const asind = x => Math.asin(Math.max(-1, Math.min(1, x))) * R2D;
 const atan2d = (y, x) => Math.atan2(y, x) * R2D;
 
-// Dní od 2000 Jan 0.0 (= 1999-12-31 00:00 UT)
+// Dní od 1999-12-31 00:00 UT (Schlyterova epocha — odpovídá lunárním elementům níže).
+// 10957 = celé dny od Unix epochy (1970-01-01) do 2000-01-01 00:00 UT,
+// minus 1 → 1999-12-31 00:00 UT.
 function dayNumber(date) {
-  return date.getTime() / 86400000 - 10957.5;
+  return date.getTime() / 86400000 - 10956;
 }
 
 // Geocentrická poloha Měsíce → RA/Dec + vzdálenost (v poloměrech Země)
@@ -1657,6 +1659,25 @@ function refresh() {
   draw();
 }
 
+// Překreslí klenbu + radar i v klidu (když sledování neběží).
+// Volá se po změně pozice/parametrů, aby vizualizace odrážela nové souřadnice.
+function redrawStatic() {
+  if (S.running) { draw(); return; }   // za běhu řeší draw() s živými daty
+  if (document.hidden) return;
+  const obs = readObs(); if (isNaN(obs.lat)) return;
+  const opt = readOpt();
+  const moon = moonTopo(new Date(), obs.lat, obs.lon);
+  const zone = computeZone(new Date(), obs.lat, obs.lon, obs.h, opt.hmin, opt.hmax, opt.horizonMin, opt.vmax, opt.tolDeg);
+  const view = {
+    selected: S.selected,
+    tolDeg: opt.tolDeg,
+    minSkyEl: opt.minSkyEl,
+    userRangeKm: +$('radarRange').value || 200,
+  };
+  drawSky($('sky'), moon, S.enriched || [], [], view);
+  S.radarPts = drawRadar($('radar'), obs, zone, S.enriched || [], [], view);
+}
+
 // ---------------------------------------------------------------- naváděcí korekce
 function renderNav(enriched, obs) {
   if (!S.navOn) return;
@@ -1759,18 +1780,24 @@ function stop() {
 }
 
 // ---------------------------------------------------------------- UI BINDING
-$('horizon').oninput = e => { $('hzVal').textContent = e.target.value + ' min'; updateZoneReadout(); persistSoon(); };
+// Po jakékoli změně pozice/parametrů přepočítej readouty, zónu, graf trajektorie
+// a překresli klenbu + radar (i v klidu). Jediné místo, ať nic nezapomeneme.
+function onLocationChanged() {
+  updateMoonReadout();
+  updateZoneReadout();
+  updateMoonTrajectory();
+  redrawStatic();
+}
+
+$('horizon').oninput = e => { $('hzVal').textContent = e.target.value + ' min'; updateZoneReadout(); redrawStatic(); persistSoon(); };
 $('step').oninput = e => { $('stepVal').textContent = e.target.value + ' s'; persistSoon(); };
-$('tol').oninput = e => { $('tolVal').textContent = (e.target.value / 100).toFixed(2) + '°'; updateZoneReadout(); persistSoon(); };
-['lat', 'lon', 'elev', 'hmin', 'hmax', 'vmax'].forEach(id => $(id).oninput = () => { updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon(); });
+$('tol').oninput = e => { $('tolVal').textContent = (e.target.value / 100).toFixed(2) + '°'; updateZoneReadout(); redrawStatic(); persistSoon(); };
+['lat', 'lon', 'elev', 'hmin', 'hmax', 'vmax'].forEach(id => $(id).oninput = () => { onLocationChanged(); persistSoon(); });
 
 // Radar slider — vizuální dosah
 $('radarRange').oninput = e => {
   $('radarRangeVal').textContent = e.target.value + ' km';
-  if (S.running) draw(); else {
-    const view = { selected: null, tolDeg: readOpt().tolDeg, minSkyEl: DEFAULTS.minSkyEl, userRangeKm: +e.target.value };
-    drawRadar($('radar'), readObs(), null, [], [], view);
-  }
+  redrawStatic();
   persistSoon();
 };
 
@@ -1806,14 +1833,14 @@ function buildSourceButtons() {
 
 $('start').onclick = start;
 $('stop').onclick = stop;
-$('setNow').onclick = () => { updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); };
+$('setNow').onclick = () => { onLocationChanged(); };
 $('geo').onclick = () => {
   if (!navigator.geolocation) { alert('Geolokace není dostupná.'); return; }
   navigator.geolocation.getCurrentPosition(p => {
     $('lat').value = p.coords.latitude.toFixed(4);
     $('lon').value = p.coords.longitude.toFixed(4);
     if (p.coords.altitude) $('elev').value = Math.round(p.coords.altitude);
-    updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon();
+    onLocationChanged(); persistSoon();
   }, err => alert('Geolokace selhala: ' + err.message));
 };
 
@@ -1862,8 +1889,7 @@ $('gpsLive').onclick = () => {
     if (altitude != null && !isNaN(altitude)) $('elev').value = Math.round(altitude);
     S.obs = { lat: latitude, lon: longitude, h: parseFloat($('elev').value) || 0 };
     setGpsStatus('GPS: aktivní · ±' + Math.round(accuracy) + ' m', 'ok');
-    updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory();
-    if (S.running) draw();
+    onLocationChanged();
   }, err => setGpsStatus('GPS chyba: ' + err.message, 'err'),
     { enableHighAccuracy: true, maximumAge: 1000, timeout: 15000 });
   $('gpsLive').style.display = 'none'; $('gpsStop').style.display = 'block';
@@ -1988,7 +2014,7 @@ function renderPosList() {
     d.innerHTML = `<div><div class="pos-name">${p.name}</div><div class="pos-coords">${p.lat} · ${p.lon} · ${p.elev}m</div></div>
       <button class="pos-del" title="Smazat" aria-label="Smazat">✕</button>`;
     d.querySelector('.pos-del').onclick = e => { e.stopPropagation(); store.removePosition(i); renderPosList(); };
-    d.onclick = () => { $('lat').value = p.lat; $('lon').value = p.lon; $('elev').value = p.elev; updateMoonReadout(); updateZoneReadout(); updateMoonTrajectory(); persistSoon(); };
+    d.onclick = () => { $('lat').value = p.lat; $('lon').value = p.lon; $('elev').value = p.elev; onLocationChanged(); persistSoon(); };
     wrap.appendChild(d);
   });
 }
