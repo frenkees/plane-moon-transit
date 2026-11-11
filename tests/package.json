@@ -1,0 +1,7 @@
+{
+  "name": "luna-transit-tests",
+  "private": true,
+  "description": "Headless testy pro LUNA·TRANSIT (jsdom + node:test). Aplikace sama žádný build nepotřebuje.",
+  "scripts": { "test": "node --test --test-force-exit --test-timeout=60000" },
+  "devDependencies": { "jsdom": "^25.0.0", "satellite.js": "5.0.0" }
+}

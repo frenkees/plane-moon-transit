@@ -384,7 +384,7 @@ body.red .photo-out{background:#0e0505}
         </svg>
       </div>
       <div>
-        <h1>LUNA<span>·</span>TRANSIT <span style="font-size:12px;letter-spacing:2px">v2</span></h1>
+        <h1>LUNA<span>·</span>TRANSIT <span style="font-size:12px;letter-spacing:2px">v2.1</span></h1>
         <div class="sub">Predikce přeletů přes Měsíc a Slunce · WGS-84 · Meeus</div>
       </div>
     </div>
@@ -477,7 +477,7 @@ body.red .photo-out{background:#0e0505}
             <input type="range" id="refreshRate" min="250" max="3000" step="250" value="1000"></div>
           <div class="field"><label>Dotaz na data <span class="rng-val" id="pollRateVal">5 s</span></label>
             <input type="range" id="pollRate" min="2000" max="20000" step="1000" value="5000"></div>
-          <div class="note">Když je událost blíž než 150 s, poll se sám zrychlí na 1,5 s (⚡ ve stavové liště).</div>
+          <div class="note">Tímto tempem se ptám jen na úzký okruh kolem kandidátů; celá zóna se načítá jednou za 4× delší dobu (min. 20 s). Bez kandidátů se mezi tím neptám vůbec. Událost blíž než 150 s zrychlí úzký dotaz na 1,5 s (⚡).</div>
         </div>
       </div>
 
@@ -600,6 +600,17 @@ body.red .photo-out{background:#0e0505}
       </div>
 
       <div class="panel">
+        <div class="panel-h"><span class="dot"></span>Kalibrace predikce</div>
+        <div class="panel-b">
+          <div id="calibOut"></div>
+          <div class="btn-row">
+            <button class="btn ghost" id="calibCsv">⇩ Export CSV</button>
+            <button class="btn ghost" id="calibClear">✕ Smazat</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
         <div class="panel-h"><span class="dot"></span>Predikované přelety</div>
         <div class="scrolly">
           <table class="tbl">
@@ -629,9 +640,9 @@ body.red .photo-out{background:#0e0505}
     <div class="panel-h"><span class="dot"></span>Poznámky k provozu</div>
     <div class="panel-b note" style="font-size:11px">
       <b>Souřadnicové rámce:</b> geometrie letadlo↔pozorovatel se počítá nad elipsoidem WGS-84. ADS-B výška <code>alt_geom</code> (GNSS, nad elipsoidem) má přednost; <code>alt_baro</code> slouží jen jako fallback s korekcí o geoid a širší nejistotou (⚠ v detailu řádku). Pole „Geoid N" převádí nadmořské výšky na elipsoidální (ČR ≈ +44,5 m).<br><br>
-      <b>Efemerida:</b> Měsíc dle zkrácené řady Meeus (kap. 47, 60+60 členů) + nutace + ΔT + vektorová topocentrická paralaxa; Slunce dle Meeus kap. 25 (~0,01°). Při startu proběhne křížová kontrola proti nezávislému Schlyterovu modelu — výsledek ukazuje chip <b>EFEM</b> ve stavové liště. Doporučené jednorázové ověření: JPL Horizons → Observer Table (Moon, tvoje souřadnice) a porovnání s readouty Az/El zde.<br><br>
-      <b>Predikce:</b> hrubý sken → zlatý řez na ~0,05 s → kontaktní časy vstup/výstup, trvání tranzitu a tětiva. Nejistota σ vychází ze stáří fixace, stability kurzu a zdroje výšky → P(zásah). Letadla v zatáčce (⟳) se propagují po oblouku podle odhadnuté úhlové rychlosti z historie fixací.<br><br>
-      <b>Data:</b> adsb.lol / adsb.fi přes vlastní proxy <code>/api/aircraft</code> (veřejná API neposílají CORS), s automatickým failoverem a kotvením času na serverové razítko. Při události &lt; 150 s se dotazování samo zrychlí (⚡). Limit veřejných API ~1 dotaz/s nepřekračuj. Data © přispěvatelé adsb.lol (ODbL) a adsb.fi.<br><br>
+      <b>Efemerida:</b> Měsíc dle zkrácené řady Meeus (kap. 47, 60+60 členů) + nutace + ΔT + vektorová topocentrická paralaxa; Slunce dle Meeus kap. 25 (~0,01°). Při startu proběhne kontrola proti publikovanému referenčnímu příkladu (Meeus 47.a, tolerance 0,3′) a hrubá křížová kontrola proti nezávislému Schlyterovu modelu (ten se sám liší až o ~6′) — výsledek ukazuje chip <b>EFEM</b> ve stavové liště. Doporučené jednorázové ověření: JPL Horizons → Observer Table (Moon, tvoje souřadnice) a porovnání s readouty Az/El zde.<br><br>
+      <b>Predikce:</b> hrubý sken → zlatý řez na ~0,05 s → kontaktní časy vstup/výstup, trvání tranzitu a tětiva. Nejistota σ vychází ze stáří fixace, stability kurzu, zdroje polohy (ADS-B × MLAT) a zdroje výšky → P(zásah); panel <b>Kalibrace predikce</b> ji škáluje podle skutečně naměřených chyb. Letadla v zatáčce (⟳) se propagují po oblouku — úhlová rychlost se bere z hlášeného <code>track_rate</code> / náklonu, jinak z historie fixací. Stoupání a klesání končí na zvolené hladině (<code>nav_altitude_mcp</code>). Započtena je diferenciální refrakce: cíl se láme celou atmosférou, letadlo jen její částí (≈ 3′ při elevaci 10°).<br><br>
+      <b>Data:</b> adsb.lol / adsb.fi přes vlastní proxy <code>/api/aircraft</code> (veřejná API neposílají CORS), s automatickým failoverem a kotvením času na serverové razítko. Proxy vrací jen potřebná pole a filtruje hladiny. Dotazy jsou dvourychlostní: celá zóna zřídka, úzký okruh kolem kandidátů často (při události &lt; 150 s po 1,5 s ⚡). Limit veřejných API ~1 dotaz/s nepřekračuj. Data © přispěvatelé adsb.lol (ODbL) a adsb.fi.<br><br>
       <b>Nasazení:</b> <code>index.html</code> + serverless funkce <code>api/aircraft.js</code> (Vercel). Z disku (file://) funguje jen SIMULACE. Notifikace, GPS, kompas, Wake Lock a tlačítko Sdílet vyžadují https. <b>Slunce vždy jen s certifikovaným filtrem.</b>
     </div>
   </div>
@@ -674,6 +685,11 @@ const DEFAULTS = {
 };
 
 const LIMITS = { pollMs:{min:1500,max:30000}, refreshMs:{min:250,max:5000} };
+
+/* Dvourychlostní dotazování: široký okruh zřídka, úzký koridor kolem kandidátů často */
+const WIDE_MIN_MS = 20000;
+/* Kalibrace σ z reality: log predikce (T−60 s) vs. skutečná poloha v čase T */
+const CALIB = { key:'lt2_calib_v1', max:300, minN:20 };
 
 /* SVG palety — HTML část řeší CSS proměnné, vykreslovací funkce čtou PAL */
 const THEMES = {
@@ -1000,10 +1016,16 @@ function ephemSelfTest(){
     maxSep = Math.max(maxSep, angSep(a.az, a.el, b.az, b.el)*60);
     if (a.distKm < 350000 || a.distKm > 412000){ ok = false; notes.push('vzdálenost Měsíce mimo rozsah'); }
   }
-  if (maxSep > 4){ ok = false; notes.push('modely Meeus×Schlyter se rozcházejí o ' + maxSep.toFixed(1) + '′'); }
+  /* Schlyterův zkrácený model se sám odchyluje až ~6′ → slouží jen jako hrubá pojistka */
+  if (maxSep > 9){ ok = false; notes.push('modely Meeus×Schlyter se rozcházejí o ' + maxSep.toFixed(1) + '′'); }
+  /* Absolutní kontrola proti publikované hodnotě: Meeus, př. 47.a (1992-04-12 0h TD)
+     → zdánlivá α = 134,688470°, δ = +13,768368°, Δ = 368 409,7 km */
+  const ref = moonEquatorial(new Date(Date.UTC(1992, 3, 12) - DELTA_T*1000));
+  const refErr = Math.hypot(wrap180(ref.ra - 134.688470)*cosd(13.768368), ref.dec - 13.768368)*60;
+  if (refErr > 0.3 || Math.abs(ref.distKm - 368409.7) > 20){ ok = false; notes.push('Meeus neodpovídá referenčnímu příkladu 47.a (Δ ' + refErr.toFixed(2) + '′)'); }
   const sd = sunEquatorial(new Date()).dec;
   if (Math.abs(sd) > 23.7){ ok = false; notes.push('deklinace Slunce mimo rozsah'); }
-  return { ok, maxSepArcmin: maxSep, notes };
+  return { ok, maxSepArcmin: maxSep, refErrArcmin: refErr, notes };
 }
 /* ============================================================================
    geo.js — geodetika nad WGS-84
@@ -1056,6 +1078,19 @@ const compass = b => COMPASS[Math.round(rev(b)/22.5) % 16];
    Vše bez DOM (testovatelné headless). Výšky letadel/pozorovatele ELIPSOIDÁLNÍ.
    ============================================================================ */
 
+/* Astronomická refrakce [°] pro geometrickou elevaci (Sæmundsson; 10 °C, 1010 hPa) */
+function refrDeg(el){ const h = Math.max(el, -1); return 1.02/tand(h + 10.3/(h + 5.11))/60; }
+
+/* Diferenciální refrakce cíl − objekt [°]. Cíl (Měsíc/Slunce) se láme celou atmosférou,
+   objekt ve výšce hRel nad pozorovatelem jen její částí: R_obj = R∞·(1 − g),
+   g = (1 − e^(−x))/x, x = hRel/H (rovinně vrstvená exponenciální atmosféra, H = 8,5 km).
+   O g·R∞ se tedy cíl vůči objektu zdánlivě zvedne. Letadlo 10 km: g ≈ 0,59; ISS: g ≈ 0,02. */
+const REFR_H = 8500;
+function diffRefr(elT, hRel){
+  const x = Math.max(hRel, 1)/REFR_H;
+  return refrDeg(elT)*(1 - Math.exp(-x))/x;
+}
+
 /* DR poloha letadla po `age` sekundách od fixace.
    Při |ω| ≥ 0,02°/s propagace po kruhovém oblouku (max 90° otočky, dál přímo). */
 function acPosAt(a, age){
@@ -1076,7 +1111,13 @@ function acPosAt(a, age){
     const rest = age - tTurn;
     if (rest > 0){ const d = dest(lat, lon, hdg, a.gsMs*rest); lat = d[0]; lon = d[1]; }
   }
-  return { lat, lon, altEll: Math.max(0, a.alt0 + a.vrMs*age), hdg, age };
+  /* Výška: lineárně, ale jen po zvolenou hladinu (nav_altitude_mcp) — pak zarovnání */
+  let altEll = a.alt0 + a.vrMs*age;
+  if (a.navAltEll != null && Math.abs(a.vrMs) > 0.5){
+    if (a.vrMs > 0 && a.navAltEll >= a.alt0 - 30) altEll = Math.min(altEll, Math.max(a.alt0, a.navAltEll));
+    else if (a.vrMs < 0 && a.navAltEll <= a.alt0 + 30) altEll = Math.max(altEll, Math.min(a.alt0, a.navAltEll));
+  }
+  return { lat, lon, altEll: Math.max(0, altEll), hdg, age };
 }
 
 /* Odhad úhlové rychlosti zatáčky z historie fixací (per hex), s vyhlazením */
@@ -1085,7 +1126,13 @@ function updateHistory(hist, list, anchorMs){
     const key = a.hex || a.cs;
     const tFix = anchorMs - a.seenPos*1000;
     const h = hist.get(key);
-    if (h){
+    /* Hlášená zatáčka má přednost před odhadem z historie: track_rate [°/s] přímo,
+       jinak z náklonu: ω = g·tan(roll)/v */
+    let rep = null;
+    if (a.trackRate != null) rep = a.trackRate;
+    else if (a.roll != null && a.gsMs > 30) rep = R2D*9.81*Math.tan(a.roll*D2R)/a.gsMs;
+    if (rep != null){ a.omega = clamp(rep, -3, 3); a.omegaSrc = 'ads'; }
+    else if (h){
       const dt = (tFix - h.t)/1000;
       if (dt > 1.5 && dt < 120){
         const om = clamp(wrap180(a.trk - h.trk)/dt, -3, 3);
@@ -1126,8 +1173,9 @@ function trackAt(tr, t){
 /* Odsazení letadla od středu cíle v čase t (obrazovkový rámec „čelem k cíli"):
    x = Δaz·cos(el_cíle) [+ doprava], y = Δel [+ nahoru], sep = přesná separace */
 function offsetAt(a, t, obs, tr, ageBase){
-  const m = trackAt(tr, t);
+  const m0 = trackAt(tr, t);
   const pos = acPosAt(a, ageBase + t);
+  const m = { az: m0.az, el: m0.el + diffRefr(m0.el, pos.altEll - obs.hEll), diam: m0.diam };
   const ae = aircraftAzEl(obs.lat, obs.lon, obs.hEll, pos.lat, pos.lon, pos.altEll);
   return {
     x: wrap180(ae.az - m.az)*cosd(m.el),
@@ -1175,13 +1223,16 @@ function findContact(f, tIn, dir, R){
 /* Nejistota příčného minutí [°]: stáří fixace × šum kurzu + šum rychlosti
    + šum výšky (geom 40 m / baro 250 m, promítnutý přes cos el) */
 function sigmaFor(a, ageAtMin, dSlant, el){
-  const sTrkRad = (a.turning ? 2.0 : 0.35)*D2R;
+  const weak = isWeakPos(a);                       // MLAT / TIS-B: horší poloha i kurz
+  const sTrkRad = (a.turning ? 2.0 : weak ? 1.2 : 0.35)*D2R;
   const L = a.gsMs*ageAtMin;
   const sAlt = a.altSrc === 'baro' ? 250 : 40;
-  const lin = Math.sqrt((L*sTrkRad)**2 + (0.8*ageAtMin)**2 + 50**2);
+  const sPos = weak ? 300 : 50;
+  const lin = Math.sqrt((L*sTrkRad)**2 + (0.8*ageAtMin)**2 + sPos**2);
   const vert = sAlt*cosd(el);
   return R2D*Math.sqrt(lin*lin + vert*vert)/Math.max(1000, dSlant);
 }
+const isWeakPos = a => !!(a.posSrc && /mlat|tisb|adsr|mode_s|other/.test(a.posSrc));
 const pHit = (b, R, sig) => sig > 0 ? clamp(Phi((R - b)/sig) - Phi((-R - b)/sig), 0, 1) : (b < R ? 1 : 0);
 
 /* Hlavní obohacení: hrubý sken → refinement → kontakty → σ, P, silueta */
@@ -1198,7 +1249,7 @@ function enrich(nowMs, list, obs, opt, tr, anchorMs){
       const p = acPosAt(a, ageBase + mt.t);
       const ae = aircraftAzEl(obs.lat, obs.lon, obs.hEll, p.lat, p.lon, p.altEll);
       if (ae.el < -1) continue;
-      const s = angSep(ae.az, ae.el, rev(mt.az), mt.el);
+      const s = angSep(ae.az, ae.el, rev(mt.az), mt.el + diffRefr(mt.el, p.altEll - obs.hEll));
       if (s < bs){ bs = s; bi = i; }
     }
     const out = { ...a, lat: pNow.lat, lon: pNow.lon, altEll: pNow.altEll,
@@ -1223,7 +1274,8 @@ function enrich(nowMs, list, obs, opt, tr, anchorMs){
         const o2 = offsetAt(a, r.t + dt, obs, tr, ageBase);
         out.omegaRel = Math.hypot(o2.x - o1.x, o2.y - o1.y)/((r.t + dt) - ta);
         const Rd = o.m.diam/2;
-        out.sigma = sigmaFor(a, ageBase + r.t, o.ae.dist, o.ae.el);
+        out.sigmaRaw = sigmaFor(a, ageBase + r.t, o.ae.dist, o.ae.el);
+        out.sigma = out.sigmaRaw*CAL.k;              // empirická kalibrace (viz calib)
         out.p = pHit(out.sep, Rd, out.sigma);
         if (out.sep < Rd){
           const t1 = findContact(fSep, r.t, -1, Rd);
@@ -1270,13 +1322,95 @@ function computeZone(now, obs, opt, target){
     tgtEl: t0.el, tgtAz: t0.az, diam: t0.diam, valid: elMaxRaw > 0.5 };
 }
 
+/* Úzká zóna dotazu kolem aktuálních kandidátů. null = žádný kandidát (není co
+   upřesňovat), {wide:true} = kandidáti jsou rozprostření, vyplatí se široký dotaz. */
+function narrowZone(enriched, opt, wideRadius){
+  const c = enriched.filter(a => a.refined && a.sep != null && a.tHit != null &&
+    a.sep < Math.max(1.5, ((a.mDiam || 0.52)/2 + opt.tolDeg)*4));
+  if (!c.length) return null;
+  let la = 0, lo = 0;
+  for (const a of c){ la += a.lat; lo += a.lon; }
+  la /= c.length; lo /= c.length;
+  let r = 0;
+  for (const a of c) r = Math.max(r, haversine(la, lo, a.lat, a.lon));
+  const radius = r + 12000;
+  if (radius > 0.6*wideRadius) return { wide:true };
+  return { center:[la, lo], radius, n:c.length };
+}
+
+/* Sloučení nových fixací se stávajícím seznamem. Každé letadlo nese absolutní čas
+   fixace fixMs; stáří seenPos se přepočítá ke společné kotvě anchorMs.
+   replace = true (široký dotaz): seznam se nahradí. Jinak se aktualizují jen shody. */
+function mergeFixes(prev, upd, anchorMs, replace){
+  for (const a of upd) a.fixMs = anchorMs - a.seenPos*1000;
+  if (replace) return upd;
+  const byKey = new Map(upd.map(a => [a.hex || a.cs, a]));
+  const out = [];
+  for (const p of prev){
+    const k = p.hex || p.cs, u = byKey.get(k);
+    if (u){ out.push(u); byKey.delete(k); continue; }
+    const age = (anchorMs - (p.fixMs ?? anchorMs))/1000;
+    if (age < 90) out.push({ ...p, seenPos: age });
+  }
+  for (const u of byKey.values()) out.push(u);
+  return out;
+}
+
+/* ---------------- kalibrace σ: predikce vs. skutečnost ---------------- */
+const CAL = { k:1, recs:[] };
+const _med = arr => { const n = arr.length; if (!n) return null;
+  const s = arr.slice().sort((a, b) => a - b); return n % 2 ? s[(n - 1)/2] : (s[n/2 - 1] + s[n/2])/2; };
+
+/* Snímek predikce pro pozdější vyhodnocení (bere se jednou, ~60 s před událostí) */
+function calibSnapshot(a, nowMs, obs){
+  return { hex:a.hex, cs:a.cs, tAbs: nowMs + a.tHit*1000, lead:a.tHit,
+    la:a.predLa, lo:a.predLo, alt:a.predAltEll, sigma:a.sigmaRaw,
+    obs:{ lat:obs.lat, lon:obs.lon, hEll:obs.hEll },
+    altSrc:a.altSrc, turning:!!a.turning, before:null };
+}
+
+/* Vyhodnocení: skutečná poloha v čase tAbs = interpolace mezi dvěma reálnými fixacemi
+   (f1 před, f2 po). Chyba se na obloze rozloží na příčnou (cross — ta rozhoduje o zásahu)
+   a podélnou (along — jen posun času). */
+function calibResolve(p, f1, f2){
+  const span = f2.t - f1.t;
+  if (!(span > 0)) return null;
+  const f = (p.tAbs - f1.t)/span;
+  const act = { lat: f1.lat + (f2.lat - f1.lat)*f, lon: f1.lon + (f2.lon - f1.lon)*f, alt: f1.alt + (f2.alt - f1.alt)*f };
+  const o = p.obs;
+  const dP = aircraftAzEl(o.lat, o.lon, o.hEll, p.la, p.lo, p.alt);
+  const dA = aircraftAzEl(o.lat, o.lon, o.hEll, act.lat, act.lon, act.alt);
+  const d1 = aircraftAzEl(o.lat, o.lon, o.hEll, f1.lat, f1.lon, f1.alt);
+  const d2 = aircraftAzEl(o.lat, o.lon, o.hEll, f2.lat, f2.lon, f2.alt);
+  const c = cosd(dP.el);
+  const ux = wrap180(d2.az - d1.az)*c, uy = d2.el - d1.el, un = Math.hypot(ux, uy);
+  if (!(un > 1e-6)) return null;
+  const ex = wrap180(dA.az - dP.az)*c, ey = dA.el - dP.el;
+  const cross = (ex*uy - ey*ux)/un, along = (ex*ux + ey*uy)/un;
+  return { t:p.tAbs, cs:p.cs, lead:Math.round(p.lead), cross, along,
+    alongS: along/(un/(span/1000)), crossM: cross*D2R*dA.dist, sigma:p.sigma,
+    altSrc:p.altSrc, turning:p.turning, gap: span/1000 };
+}
+
+/* Robustní odhad měřítka: pro správné σ je medián |cross|/σ = 0,6745 */
+function calibStats(recs){
+  const ok = recs.filter(r => r && isFinite(r.cross) && r.sigma > 0);
+  const n = ok.length;
+  if (!n) return { n:0, k:1, kRaw:null };
+  const kRaw = _med(ok.map(r => Math.abs(r.cross)/r.sigma))/0.6745;
+  return { n, kRaw, k: n >= CALIB.minN ? clamp(kRaw, 0.4, 3) : 1,
+    medCross: _med(ok.map(r => Math.abs(r.cross))), medCrossM: _med(ok.map(r => Math.abs(r.crossM))),
+    medAlongS: _med(ok.map(r => Math.abs(r.alongS))) };
+}
+
 /* Analytická naváděcí korekce: nejmenší čtverce v horizontální rovině.
    Minimalizuje |P(r − δ)|, P = projekce ⊥ směru cíle m; δ = a·Ê + b·N̂.
    Dvě iterace bohatě stačí (problém je téměř lineární). */
 function correctionFor(a, obs, tr){
   if (a.sep == null || a.sep > 2 || a.tHit == null || !(a.predEl > 0) || a.predLa == null) return null;
-  const m0 = trackAt(tr, a.tHit);
-  if (m0.el <= 0) return null;
+  const mB = trackAt(tr, a.tHit);
+  if (mB.el <= 0) return null;
+  const m0 = { az: mB.az, el: mB.el + diffRefr(mB.el, a.predAltEll - obs.hEll) };
   const mE = sind(m0.az)*cosd(m0.el), mN = cosd(m0.az)*cosd(m0.el), mU = sind(m0.el);
   let oLat = obs.lat, oLon = obs.lon, accE = 0, accN = 0;
   for (let it = 0; it < 2; it++){
@@ -1310,9 +1444,20 @@ function mapAircraft(a){
     const ab = a.alt_baro === 'ground' ? 0 : (a.alt_baro ?? 0);
     alt0 = (isFinite(ab) ? ab : 0)*0.3048; altSrc = 'baro';
   }
+  const fin = v => typeof v === 'number' && isFinite(v);
+  /* Zvolená hladina (MCP/FMS) je tlaková výška → na elipsoidální ji převede rozdíl
+     alt_geom − alt_baro téhož letadla; když chybí, přičte se v pollu jen geoid. */
+  const navFt = fin(a.nav_altitude_mcp) ? a.nav_altitude_mcp : (fin(a.nav_altitude_fms) ? a.nav_altitude_fms : null);
+  let navAltEll = null, navNeedsGeoid = false;
+  if (navFt != null && navFt > 0){
+    if (altSrc === 'geom' && fin(a.alt_baro)) navAltEll = navFt*0.3048 + (alt0 - a.alt_baro*0.3048);
+    else { navAltEll = navFt*0.3048; navNeedsGeoid = true; }
+  }
   return {
-    cs: (a.flight || a.r || a.hex || '?').trim(), hex: a.hex || null,
-    type: ((a.t || '').trim().toUpperCase()) || null,
+    cs: String(a.flight || a.r || a.hex || '?').replace(/[^A-Za-z0-9_\-]/g, '') || '?', hex: a.hex || null,
+    type: ((a.t || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '')) || null,
+    trackRate: fin(a.track_rate) ? a.track_rate : null, roll: fin(a.roll) ? a.roll : null,
+    navAltEll, navNeedsGeoid, posSrc: typeof a.type === 'string' ? a.type : null,
     lat0: a.lat, lon0: a.lon, alt0, altSrc,
     trk: a.track ?? a.true_heading ?? 0,
     gsMs: (a.gs ?? 0)*0.514444,
@@ -1324,7 +1469,7 @@ function mapAircraft(a){
 
 /* Live fetch: timeout 8 s, automatický failover na druhý zdroj,
    kotvení stáří fixací na serverové razítko j.now (s i ms varianty). */
-async function fetchLive(sourceId, zone){
+async function fetchLive(sourceId, zone, opt){
   const order = [sourceId, ...DATA_SOURCES.filter(s => s.url && s.id !== sourceId).map(s => s.id)];
   let lastErr = null;
   for (const id of order){
@@ -1334,7 +1479,8 @@ async function fetchLive(sourceId, zone){
       const radiusNm = Math.min(250, Math.ceil(zone.radius/1852) + 5);
       const url = src.url.replace('{lat}', zone.center[0].toFixed(4))
                          .replace('{lon}', zone.center[1].toFixed(4))
-                         .replace('{radius}', radiusNm);
+                         .replace('{radius}', radiusNm) +
+        (opt && src.url.startsWith('/api/') ? '&hmin=' + Math.round(opt.hmin) + '&hmax=' + Math.round(opt.hmax) : '');
       const ctl = new AbortController();
       const to = setTimeout(() => ctl.abort(), 8000);
       const res = await fetch(url, { signal: ctl.signal });
@@ -1374,7 +1520,7 @@ function makeDemoFleet(obs, zone, now, target){
     const tCross = 95, h = 10500 + obs.geoid;
     const mF = targetTopoC(now.getTime() + tCross*1000, obs.lat, obs.lon, obs.hEll, target);
     if (mF.el > 1){
-      const dCross = solveDist(obs, h, mF.az, mF.el);
+      const dCross = solveDist(obs, h, mF.az, mF.el + diffRefr(mF.el, h - obs.hEll));
       const CP = dest(obs.lat, obs.lon, mF.az, dCross);
       const trk0 = rev(mF.az - 90), gs = 235;
       const st = dest(CP[0], CP[1], rev(trk0 + 180), gs*tCross);
@@ -1868,6 +2014,9 @@ const S = {
   previewMin:0, fieldOn:false, fieldTimer:null, lastBeepSec:null,
   wakeLock:null, theme:DEFAULTS.theme, fieldHalf:DEFAULTS.fieldHalf,
   selfTest:null, failover:false,
+  polling:false, errCount:0, backoffUntil:0,
+  lastWideMs:0, wideKey:'', lastKind:'wide',
+  calPend:new Map(), calSeen:new Map(),
 };
 
 /* ----------------------------- úložiště ----------------------------- */
@@ -2045,6 +2194,77 @@ function compute(){
     if (want !== S.boost){ S.boost = want; scheduleLoops(); }
   } else if (S.boost){ S.boost = false; scheduleLoops(); }
   if (S.running) checkAlarms(S.enriched, S.opt);
+  if (S.running && S.source !== 'demo') calibCollect(nowMs);
+}
+
+/* --------------------------- kalibrace σ --------------------------- */
+function calibLoad(){
+  try { CAL.recs = store.safeParse(localStorage.getItem(CALIB.key), []) || []; } catch(e){ CAL.recs = []; }
+  CAL.k = calibStats(CAL.recs).k;
+}
+function calibSave(){ try { localStorage.setItem(CALIB.key, JSON.stringify(CAL.recs.slice(-CALIB.max))); } catch(e){} }
+/* Jednou na letadlo a událost uloží predikci, když do minima zbývá 50–70 s */
+function calibCollect(nowMs){
+  for (const a of S.enriched){
+    if (!a.refined || !a.hex || a.tHit == null || a.tHit < 50 || a.tHit > 70) continue;
+    if (!(a.sep < 3) || !(a.sigmaRaw > 0) || a.predLa == null) continue;
+    const tAbs = nowMs + a.tHit*1000, seen = S.calSeen.get(a.hex);
+    if (seen && Math.abs(seen - tAbs) < 120000) continue;
+    S.calSeen.set(a.hex, tAbs);
+    S.calPend.set(a.hex, calibSnapshot(a, nowMs, S.obs));
+  }
+  if (S.calSeen.size > 500) S.calSeen.clear();
+}
+/* Nové fixace: poslední před tAbs si pamatuj, první po tAbs událost vyhodnotí */
+function calibFeed(upd, anchorMs){
+  if (!S.calPend.size) return;
+  const by = new Map(upd.filter(a => a.hex).map(a => [a.hex, a]));
+  let added = false;
+  for (const [hex, p] of S.calPend){
+    const a = by.get(hex);
+    if (a){
+      const fix = { t:a.fixMs, lat:a.lat0, lon:a.lon0, alt:a.alt0 };
+      if (fix.t <= p.tAbs){ if (!p.before || fix.t > p.before.t + 100) p.before = fix; }
+      else {
+        if (p.before && fix.t - p.before.t <= 20000){
+          const rec = calibResolve(p, p.before, fix);
+          if (rec && Math.abs(rec.cross) < 5){ CAL.recs.push(rec); added = true; }
+        }
+        S.calPend.delete(hex);
+        continue;
+      }
+    }
+    if (anchorMs > p.tAbs + 40000) S.calPend.delete(hex);
+  }
+  if (added){
+    if (CAL.recs.length > CALIB.max) CAL.recs = CAL.recs.slice(-CALIB.max);
+    CAL.k = calibStats(CAL.recs).k;
+    calibSave(); renderCalib();
+  }
+}
+function renderCalib(){
+  const st = calibStats(CAL.recs), el0 = $('calibOut');
+  if (!el0) return;
+  if (!st.n){ el0.innerHTML = '<div class="note">Zatím žádné vzorky. Sbírají se samy při živém sledování: predikce 60 s předem se porovná se skutečnou polohou letadla.</div>'; return; }
+  el0.innerHTML =
+    '<div class="zrow"><span class="lbl">Vzorků</span><span class="num">' + st.n + '</span></div>' +
+    '<div class="zrow"><span class="lbl">Příčná chyba (medián)</span><span class="num">' + st.medCross.toFixed(3) + '° · ' + Math.round(st.medCrossM) + ' m</span></div>' +
+    '<div class="zrow"><span class="lbl">Časová chyba (medián)</span><span class="num">' + st.medAlongS.toFixed(1) + ' s</span></div>' +
+    '<div class="zrow"><span class="lbl">Skutečnost / model σ</span><span class="num">' + st.kRaw.toFixed(2) + '×</span></div>' +
+    '<div class="zrow ztot"><span class="lbl">Použitý násobitel σ</span><span class="num">' + CAL.k.toFixed(2) + '×</span></div>' +
+    '<div class="note" style="margin-top:6px">' + (st.n < CALIB.minN
+      ? 'Násobitel se začne používat od ' + CALIB.minN + ' vzorků (zbývá ' + (CALIB.minN - st.n) + ').'
+      : 'σ a P(zásah) jsou škálované podle naměřených chyb (omezeno na 0,4–3×).') + '</div>';
+}
+function calibExport(){
+  const head = 'cas_utc;spoj;predstih_s;pricna_deg;pricna_m;podelna_deg;cas_chyba_s;sigma_model_deg;vyska;zatacka;mezera_fixaci_s';
+  const rows = CAL.recs.map(r => [new Date(r.t).toISOString(), r.cs, r.lead, r.cross.toFixed(4), Math.round(r.crossM),
+    r.along.toFixed(4), r.alongS.toFixed(2), r.sigma.toFixed(4), r.altSrc, r.turning ? 1 : 0, r.gap.toFixed(1)].join(';'));
+  const blob = new Blob([head + '\n' + rows.join('\n') + '\n'], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'luna-transit-kalibrace.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
 /* ------------------------------ kreslení ------------------------------ */
@@ -2137,7 +2357,8 @@ function drawTable(hits, opt){
     const when = a.tHit != null ? new Date(S.lastComputeMs + a.tHit*1000) : null;
     tr.style.cursor = 'pointer';
     tr.title = 'hladina ' + Math.round(a.altMsl) + ' m MSL · typ ' + (a.type || '?') +
-      ' · výška: ' + (a.altSrc === 'geom' ? 'GNSS' : 'baro ⚠');
+      ' · výška: ' + (a.altSrc === 'geom' ? 'GNSS' : 'baro ⚠') + (isWeakPos(a) ? ' · poloha: ' + a.posSrc + ' ⚠' : '') +
+      (a.navAltEll != null ? ' · zvolená hladina ' + Math.round(a.navAltEll - (S.obs ? S.obs.geoid : 0)) + ' m' : '');
     tr.innerHTML =
       '<td class="cs">' + a.cs + '</td>' +
       '<td>' + fmtRel(rem) + (when ? '<small>' + fmtClock(when) + '</small>' : '') + '</td>' +
@@ -2229,29 +2450,51 @@ function updateTrajectory(){
 }
 
 /* ----------------------------- smyčky ----------------------------- */
+function wideMs(){ return Math.max(WIDE_MIN_MS, 4*S.pollMs); }
 async function poll(){
   S.obs = readObs(); S.opt = readOpt();
   if (isNaN(S.obs.lat) || isNaN(S.obs.lon)) return;
   if (S.polling) return;                                  // předchozí dotaz ještě běží
   if (S.source !== 'demo' && Date.now() < (S.backoffUntil || 0)){ refresh(); return; }
+  const z = computeZone(new Date(), S.obs, S.opt, S.target);
+  /* Široký dotaz (celá zóna) jen občas; mezi tím úzký okruh kolem kandidátů,
+     a když žádní nejsou, tak žádný dotaz — polohy se dopočítají. */
+  let q = z, kind = 'wide';
+  if (S.source !== 'demo'){
+    const key = S.source + '|' + S.target + '|' + S.obs.lat.toFixed(3) + '|' + S.obs.lon.toFixed(3);
+    const wideDue = !S.lastWideMs || key !== S.wideKey || Date.now() - S.lastWideMs >= wideMs() - 250;
+    S.wideKey = key;
+    if (!wideDue){
+      const nz = narrowZone(S.enriched, S.opt, z.radius);
+      if (!nz){ refresh(); S.nextPoll = Math.round(effPollMs()/1000); return; }
+      if (!nz.wide){ q = nz; kind = 'narrow'; }
+    }
+  }
   S.polling = true;
   try {
-    const z = computeZone(new Date(), S.obs, S.opt, S.target);
     if (S.source === 'demo'){
       S.aircraft = fetchDemo(S.demo, S.obs, z, new Date(), S.target);
       S.anchorMs = Date.now();
       updateHistory(S.hist, S.aircraft, S.anchorMs);
       setPill('demo', z.valid ? 'SIMULACE' : tgtName().toUpperCase() + ' POD OBZOREM');
-      $('src').textContent = 'synth'; S.failover = false; hideWarn();
+      $('src').textContent = 'synth'; S.failover = false; S.lastKind = 'wide'; hideWarn();
     } else {
-      const r = await fetchLive(S.source, z);
-      S.anchorMs = Date.now();
-      S.aircraft = r.list.map(a => { if (a.altSrc === 'baro') a.alt0 += S.obs.geoid; return a; })
+      const r = await fetchLive(S.source, q, S.opt);
+      const anchor = Date.now();
+      const upd = r.list.map(a => {
+          if (a.altSrc === 'baro') a.alt0 += S.obs.geoid;
+          if (a.navNeedsGeoid){ a.navAltEll += S.obs.geoid; a.navNeedsGeoid = false; }
+          return a; })
         .filter(a => { const msl = a.alt0 - S.obs.geoid; return msl >= S.opt.hmin - 300 && msl <= S.opt.hmax + 300; });
-      updateHistory(S.hist, S.aircraft, S.anchorMs);
+      updateHistory(S.hist, upd, anchor);
+      S.aircraft = mergeFixes(S.aircraft, upd, anchor, kind === 'wide');
+      S.anchorMs = anchor; S.lastKind = kind;
+      if (kind === 'wide') S.lastWideMs = anchor;
+      calibFeed(upd, anchor);
       S.failover = r.failover; S.errCount = 0; S.backoffUntil = 0;
       setPill('live', (z.valid ? 'LIVE' : tgtName().toUpperCase() + ' POD OBZOREM') + (r.failover ? ' ⇄' : ''));
-      $('src').textContent = sourceById(r.srcUsed).host || r.srcUsed;
+      $('src').textContent = (sourceById(r.srcUsed).host || r.srcUsed) +
+        (kind === 'narrow' ? ' · úzký ' + Math.round(q.radius/1852) + ' NM' : '');
       hideWarn();
     }
   } catch(e){
@@ -2287,7 +2530,9 @@ function scheduleLoops(){
     S.pollTimer = setInterval(poll, effPollMs());
     S.refreshTimer = setInterval(refresh, S.refreshMs);
   }
-  $('pollInfo').textContent = (effPollMs()/1000).toFixed(1).replace('.0', '') + ' s' + (S.boost ? ' ⚡' : '');
+  $('pollInfo').textContent = (effPollMs()/1000).toFixed(1).replace('.0', '') + ' s' + (S.boost ? ' ⚡' : '') +
+    ' / ' + Math.round(wideMs()/1000) + ' s';
+  $('pollInfo').title = 'úzký dotaz kolem kandidátů / široký dotaz na celou zónu';
 }
 
 /* --------------------------- start / stop --------------------------- */
@@ -2301,7 +2546,8 @@ function start(){
   if (isNaN(obs.lat) || isNaN(obs.lon)){ showWarn('Zadej platné souřadnice (šířka/délka).'); return; }
   hideWarn();
   S.running = true; S.demo = {}; S.boost = false; S.selected = null;
-  S.polling = false; S.errCount = 0; S.backoffUntil = 0;
+  S.polling = false; S.errCount = 0; S.backoffUntil = 0; S.lastWideMs = 0; S.aircraft = [];
+  S.calPend.clear();
   $('start').style.display = 'none'; $('stop').style.display = '';
   setPill('live', 'STARTUJI…');
   poll();
@@ -2505,7 +2751,7 @@ function buildSourceButtons(){
     b.onclick = () => {
       seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
       b.classList.add('on');
-      S.source = s.id; S.demo = {}; S.failover = false; S.errCount = 0; S.backoffUntil = 0;
+      S.source = s.id; S.demo = {}; S.failover = false; S.errCount = 0; S.backoffUntil = 0; S.lastWideMs = 0;
       persistSoon();
       if (S.running) poll();
     };
@@ -2527,7 +2773,7 @@ function buildTargetButtons(){
     b.onclick = () => {
       seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
       b.classList.add('on');
-      S.target = t.id; S.demo = {}; S.selected = null;
+      S.target = t.id; S.demo = {}; S.selected = null; S.lastWideMs = 0;
       updateTargetUI(); onLocationChanged(); persistSoon();
       if (S.running) poll();
     };
@@ -2681,6 +2927,9 @@ $('prevReset').onclick = () => {
   if (S.running) draw(); else redrawStatic();
 };
 
+$('calibCsv').onclick = calibExport;
+$('calibClear').onclick = () => { CAL.recs = []; CAL.k = 1; calibSave(); renderCalib(); };
+
 $('alarmDismiss').onclick = dismissAlarm;
 $('alarmMute').onclick = muteAlarm;
 $('notifReq').onclick = () => {
@@ -2793,15 +3042,16 @@ function init(){
   $('navBody').classList.add('disabled-look');
   renderPosList();
   updateNotifStatus();
+  calibLoad(); renderCalib();
 
   S.selfTest = ephemSelfTest();
   const chip = $('modelChip');
   chip.className = 'chip ' + (S.selfTest.ok ? 'ok' : 'bad');
-  chip.textContent = S.selfTest.ok ? ('EFEM ✓ Δ' + S.selfTest.maxSepArcmin.toFixed(1) + '′') : 'EFEM ⚠';
-  chip.title = S.selfTest.ok ? 'Křížová kontrola Meeus × Schlyter v normě' : S.selfTest.notes.join(' · ');
+  chip.textContent = S.selfTest.ok ? ('EFEM ✓ ' + S.selfTest.refErrArcmin.toFixed(2) + '′') : 'EFEM ⚠';
+  chip.title = S.selfTest.ok ? 'Odchylka od referenčního příkladu Meeus 47.a; křížová kontrola se Schlyterem v normě' : S.selfTest.notes.join(' · ');
   $('modelLine').innerHTML = 'Model: <b>Meeus</b> (zkr. ELP2000 + nutace + topocentrická paralaxa, WGS-84). Kontrola vs. Schlyter: ' +
     (S.selfTest.ok
-      ? '<span style="color:var(--green)">OK, Δ ' + S.selfTest.maxSepArcmin.toFixed(1) + '′</span>'
+      ? '<span style="color:var(--green)">OK, Δ ' + S.selfTest.maxSepArcmin.toFixed(1) + '′</span> · vs. reference Meeus 47.a: <span style="color:var(--green)">' + S.selfTest.refErrArcmin.toFixed(2) + '′</span>'
       : '<span style="color:var(--red)">' + escapeHtml(S.selfTest.notes.join('; ')) + '</span>');
 
   updateTargetUI();
