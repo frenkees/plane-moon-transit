@@ -631,8 +631,8 @@ body.red .photo-out{background:#0e0505}
       <b>Souřadnicové rámce:</b> geometrie letadlo↔pozorovatel se počítá nad elipsoidem WGS-84. ADS-B výška <code>alt_geom</code> (GNSS, nad elipsoidem) má přednost; <code>alt_baro</code> slouží jen jako fallback s korekcí o geoid a širší nejistotou (⚠ v detailu řádku). Pole „Geoid N" převádí nadmořské výšky na elipsoidální (ČR ≈ +44,5 m).<br><br>
       <b>Efemerida:</b> Měsíc dle zkrácené řady Meeus (kap. 47, 60+60 členů) + nutace + ΔT + vektorová topocentrická paralaxa; Slunce dle Meeus kap. 25 (~0,01°). Při startu proběhne křížová kontrola proti nezávislému Schlyterovu modelu — výsledek ukazuje chip <b>EFEM</b> ve stavové liště. Doporučené jednorázové ověření: JPL Horizons → Observer Table (Moon, tvoje souřadnice) a porovnání s readouty Az/El zde.<br><br>
       <b>Predikce:</b> hrubý sken → zlatý řez na ~0,05 s → kontaktní časy vstup/výstup, trvání tranzitu a tětiva. Nejistota σ vychází ze stáří fixace, stability kurzu a zdroje výšky → P(zásah). Letadla v zatáčce (⟳) se propagují po oblouku podle odhadnuté úhlové rychlosti z historie fixací.<br><br>
-      <b>Data:</b> airplanes.live / adsb.one s automatickým failoverem a kotvením času na serverové razítko. Při události &lt; 150 s se dotazování samo zrychlí (⚡). Limit veřejných API ~1 dotaz/s nepřekračuj.<br><br>
-      <b>Nasazení:</b> jeden statický soubor — funguje i z disku (file://). Notifikace, GPS, kompas, Wake Lock a tlačítko Sdílet vyžadují https. <b>Slunce vždy jen s certifikovaným filtrem.</b>
+      <b>Data:</b> adsb.lol / adsb.fi přes vlastní proxy <code>/api/aircraft</code> (veřejná API neposílají CORS), s automatickým failoverem a kotvením času na serverové razítko. Při události &lt; 150 s se dotazování samo zrychlí (⚡). Limit veřejných API ~1 dotaz/s nepřekračuj. Data © přispěvatelé adsb.lol (ODbL) a adsb.fi.<br><br>
+      <b>Nasazení:</b> <code>index.html</code> + serverless funkce <code>api/aircraft.js</code> (Vercel). Z disku (file://) funguje jen SIMULACE. Notifikace, GPS, kompas, Wake Lock a tlačítko Sdílet vyžadují https. <b>Slunce vždy jen s certifikovaným filtrem.</b>
     </div>
   </div>
 
@@ -650,8 +650,10 @@ const LS = {
 };
 
 const DATA_SOURCES = [
-  { id:'live',    label:'LIVE · airplanes.live', url:'https://api.airplanes.live/v2/point/{lat}/{lon}/{radius}', note:'Veřejné API bez klíče, limit ~1 dotaz/s.' },
-  { id:'adsbone', label:'LIVE · adsb.one',       url:'https://api.adsb.one/v2/point/{lat}/{lon}/{radius}',       note:'Záložní zrcadlo, stejný formát.' },
+  /* Veřejná ADS-B API neposílají CORS → voláme je přes vlastní same-origin proxy /api/aircraft
+     (Vercel funkce api/aircraft.js). airplanes.live (403, jen na žádost) a adsb.one (zrušeno) vyřazeny. */
+  { id:'live',   label:'LIVE · adsb.lol', host:'adsb.lol', url:'/api/aircraft?src=lol&lat={lat}&lon={lon}&r={radius}', note:'adsb.lol přes vlastní proxy, bez klíče (ODbL).' },
+  { id:'adsbfi', label:'LIVE · adsb.fi',  host:'adsb.fi',  url:'/api/aircraft?src=fi&lat={lat}&lon={lon}&r={radius}',  note:'Záložní zdroj adsb.fi přes vlastní proxy, limit 1 dotaz/s.' },
   { id:'demo',    label:'SIMULACE',              url:null, note:'Syntetický provoz; jeden spoj zaručeně projde kotoučem.' },
 ];
 
@@ -2230,6 +2232,9 @@ function updateTrajectory(){
 async function poll(){
   S.obs = readObs(); S.opt = readOpt();
   if (isNaN(S.obs.lat) || isNaN(S.obs.lon)) return;
+  if (S.polling) return;                                  // předchozí dotaz ještě běží
+  if (S.source !== 'demo' && Date.now() < (S.backoffUntil || 0)){ refresh(); return; }
+  S.polling = true;
   try {
     const z = computeZone(new Date(), S.obs, S.opt, S.target);
     if (S.source === 'demo'){
@@ -2244,15 +2249,21 @@ async function poll(){
       S.aircraft = r.list.map(a => { if (a.altSrc === 'baro') a.alt0 += S.obs.geoid; return a; })
         .filter(a => { const msl = a.alt0 - S.obs.geoid; return msl >= S.opt.hmin - 300 && msl <= S.opt.hmax + 300; });
       updateHistory(S.hist, S.aircraft, S.anchorMs);
-      S.failover = r.failover;
+      S.failover = r.failover; S.errCount = 0; S.backoffUntil = 0;
       setPill('live', (z.valid ? 'LIVE' : tgtName().toUpperCase() + ' POD OBZOREM') + (r.failover ? ' ⇄' : ''));
-      try { $('src').textContent = new URL(sourceById(r.srcUsed).url.replace('{lat}', '0').replace('{lon}', '0').replace('{radius}', '1')).hostname; } catch(e){ $('src').textContent = r.srcUsed; }
+      $('src').textContent = sourceById(r.srcUsed).host || r.srcUsed;
       hideWarn();
     }
   } catch(e){
     setPill('err', 'CHYBA SPOJENÍ'); $('src').textContent = '—';
-    showWarn('Nepodařilo se načíst LIVE data (' + (e && e.message || e) + '). Zkusil jsem oba zdroje — pravděpodobně výpadek/CORS/offline. Přepni na SIMULACI, nebo to zkus za chvíli.');
-  }
+    S.errCount = (S.errCount || 0) + 1;
+    const waitS = Math.min(60, 5*2**(S.errCount - 1));     // 5, 10, 20, 40, 60 s
+    S.backoffUntil = Date.now() + waitS*1000;
+    const local = location.protocol === 'file:';
+    showWarn('Nepodařilo se načíst LIVE data (' + (e && e.message || e) + '). ' +
+      (local ? 'LIVE vyžaduje nasazení s proxy /api/aircraft (Vercel) — z disku funguje jen SIMULACE.'
+             : 'Zkusil jsem oba zdroje přes proxy /api/aircraft — výpadek zdroje nebo offline. Další pokus za ' + waitS + ' s, případně přepni na SIMULACI.'));
+  } finally { S.polling = false; }
   refresh();
   S.nextPoll = Math.round(effPollMs()/1000);
 }
@@ -2290,6 +2301,7 @@ function start(){
   if (isNaN(obs.lat) || isNaN(obs.lon)){ showWarn('Zadej platné souřadnice (šířka/délka).'); return; }
   hideWarn();
   S.running = true; S.demo = {}; S.boost = false; S.selected = null;
+  S.polling = false; S.errCount = 0; S.backoffUntil = 0;
   $('start').style.display = 'none'; $('stop').style.display = '';
   setPill('live', 'STARTUJI…');
   poll();
@@ -2493,7 +2505,7 @@ function buildSourceButtons(){
     b.onclick = () => {
       seg.querySelectorAll('button').forEach(x => x.classList.remove('on'));
       b.classList.add('on');
-      S.source = s.id; S.demo = {}; S.failover = false;
+      S.source = s.id; S.demo = {}; S.failover = false; S.errCount = 0; S.backoffUntil = 0;
       persistSoon();
       if (S.running) poll();
     };

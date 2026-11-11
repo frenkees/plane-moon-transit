@@ -49,13 +49,12 @@ python3 -m http.server 8000
 
 ## 🌐 Datový zdroj a CORS
 
-Aplikace volá veřejné API **airplanes.live** (zdarma, bez klíče), s rezervní volbou **adsb.one**. Pokud prohlížeč požadavek zablokuje kvůli CORS, máte tři možnosti:
+Živá data: **adsb.lol** (primární) a **adsb.fi** (záloha), formát ADSBExchange v2. Tato API neposílají CORS hlavičky, proto je aplikace volá přes vlastní same-origin proxy **`/api/aircraft`** — Vercel serverless funkce v `api/aircraft.js` (bez závislostí, bez klíčů). Vercel ji nasadí automaticky, stačí mít složku `api/` v repozitáři.
 
-1. Přepnout zdroj na druhé zrcadlo v UI.
-2. Použít **SIMULACI** — syntetický provoz, jeden spoj je vždy nastaven tak, aby Měsícem prolétl (ideální pro test celé logiky).
-3. Vložit **vlastní proxy** prefix (např. `https://corsproxy.io/?url=`) do pole v sekci *Datový zdroj*.
-
-> Veřejné API je omezené na ~1 požadavek/s — proto má aplikace oddělenou frekvenci dotazů (poll) a překreslování.
+- `GET /api/aircraft?src=lol|fi&lat=..&lon=..&r=..` (poloměr v námořních mílích, max 250)
+- Původní zdroje **airplanes.live** (HTTP 403, přístup jen na žádost, 500 dotazů/den) a **adsb.one** (zrušeno) byly vyřazeny.
+- Mimo Vercel (GitHub Pages, `file://`) funguje jen **SIMULACE**.
+- Limit zdrojů ~1 dotaz/s; při chybě aplikace prodlužuje odstup pokusů (5–60 s).
 
 ---
 
