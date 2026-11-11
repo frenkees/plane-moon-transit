@@ -6,6 +6,12 @@
 <meta name="theme-color" content="#07090c">
 <meta name="description" content="Predikce přeletů letadel přes lunární / sluneční kotouč. v2: WGS-84, Meeus, kontaktní časy, pohled na disk, terénní režim.">
 <title>LUNA TRANSIT v2 · Přelety přes Měsíc a Slunce</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Luna Transit">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -299,6 +305,22 @@ body.red .mt-stats{background:#0e0505}
 body.red .photo-out{background:#0e0505}
 .photo-out .row{overflow:hidden;clear:both}
 .photo-out .k{color:var(--dim)}
+
+/* přepínače v řádku, mapa, ISS */
+.tog-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--dim);letter-spacing:.5px}
+#map{height:380px;background:#0a1016;z-index:0}
+#map.leaflet-container{font-family:var(--mono);font-size:11px}
+#map .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.92) contrast(.9) saturate(.7)}
+body.red #map .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(.6) sepia(1) hue-rotate(-50deg) saturate(4)}
+.map-foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:9px 14px;font-size:11px;line-height:1.6;border-top:1px solid var(--line)}
+.map-foot .btn{width:auto;padding:8px 12px;flex:none}
+.map-foot b{color:var(--amber)}
+.iss-ctrl{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+.iss-ctrl .field{margin:0;flex:0 0 120px}
+.iss-ctrl .btn{width:auto;flex:1 1 180px}
+.iss-ctrl .seg{flex:1 1 200px;margin:0}
+.tbl .mini{display:inline-block;width:auto;padding:5px 8px;font-size:10px;letter-spacing:.5px;margin:1px}
+.tbl tr.here td{background:rgba(94,224,138,.09)}
 .photo-out .v{color:var(--amber);font-family:var(--disp);font-weight:600;float:right}
 
 .sunwarn{display:none;background:rgba(255,77,77,.1);border:1px solid rgba(255,77,77,.45);border-radius:8px;
@@ -516,6 +538,11 @@ body.red .photo-out{background:#0e0505}
             <button class="btn ghost" id="notifReq" style="width:auto;padding:9px 14px">🔔 Povolit</button>
             <span class="notif-status" id="notifStatus">Notifikace: —</span>
           </div>
+          <div class="tog-row"><span>Hlasový odpočet a hlášení přeletu</span>
+            <label class="switch"><input type="checkbox" id="voiceOn"><span class="slider"></span></label></div>
+          <div class="tog-row"><span>Vibrace (alarm, poslední 3 s)</span>
+            <label class="switch"><input type="checkbox" id="vibOn" checked><span class="slider"></span></label></div>
+          <div class="note" style="margin-top:8px">Hlas hlásí 60, 30, 20, 10 a 5 s v terénním režimu; přesné vteřiny dál odměřuje pípání (řeč má zpoždění).</div>
         </div>
       </div>
 
@@ -558,6 +585,17 @@ body.red .photo-out{background:#0e0505}
           <input type="range" id="radarRange" min="50" max="400" step="25" value="200">
         </div>
         <div class="skywrap"><svg id="radar" viewBox="0 0 560 560" role="img" aria-label="Radarový půdorys provozu kolem stanoviště"></svg></div>
+      </div>
+
+      <div class="panel" id="mapPanel">
+        <div class="panel-h" style="justify-content:space-between"><span style="display:flex;align-items:center;gap:9px"><span class="dot"></span>Mapa · osa tranzitu</span>
+          <label class="switch" title="Načíst mapu (OpenStreetMap)"><input type="checkbox" id="mapOn"><span class="slider"></span></label>
+        </div>
+        <div id="mapWrap" style="display:none">
+          <div id="map"></div>
+          <div class="map-foot"><span id="mapInfo">—</span><span class="spacer"></span><button class="btn ghost" id="mapFit">⌖ Vycentrovat</button></div>
+        </div>
+        <div class="panel-b note" id="mapHint">Zapni přepínač — načte se mapa a zakreslí se čára, ze které kandidát projde středem kotouče (zelený pás = celý kotouč). Bere se vybraný spoj, jinak nejlepší kandidát. Mapové dlaždice se stahují z OpenStreetMap.</div>
       </div>
 
     </div>
@@ -635,6 +673,25 @@ body.red .photo-out{background:#0e0505}
     </div>
   </div>
 
+  <!-- ====================== ISS ====================== -->
+  <div class="panel">
+    <div class="panel-h"><span class="dot"></span>Družice · tranzity přes Měsíc a Slunce</div>
+    <div class="panel-b">
+      <div class="iss-ctrl">
+        <div class="seg compact" id="issSeg"></div>
+        <div class="field"><label>Max. dojezd km</label><input type="text" inputmode="numeric" id="issMaxKm" value="40"></div>
+        <button class="btn" id="issGo">🛰 Vyhledat na 10 dní</button>
+      </div>
+      <div class="note" id="issStatus">Stáhne aktuální dráhové elementy (TLE, CelesTrak) a najde průlety, při kterých družice z tvého okolí přejde přes kotouč Měsíce nebo Slunce. Pás viditelnosti je široký jen pár kilometrů — tabulka říká, kam přesně dojet.</div>
+      <div class="scrolly" style="max-height:none;overflow-x:auto">
+        <table class="tbl" id="issTbl" style="display:none">
+          <thead><tr><th>Kdy</th><th>Cíl</th><th>Kam dojet</th><th></th><th>Odsud mine o</th><th>Elevace</th><th>Vzdálenost · velikost</th><th>Trvání</th></tr></thead>
+          <tbody id="issRows"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ====================== POZNÁMKY ====================== -->
   <div class="panel">
     <div class="panel-h"><span class="dot"></span>Poznámky k provozu</div>
@@ -643,7 +700,10 @@ body.red .photo-out{background:#0e0505}
       <b>Efemerida:</b> Měsíc dle zkrácené řady Meeus (kap. 47, 60+60 členů) + nutace + ΔT + vektorová topocentrická paralaxa; Slunce dle Meeus kap. 25 (~0,01°). Při startu proběhne kontrola proti publikovanému referenčnímu příkladu (Meeus 47.a, tolerance 0,3′) a hrubá křížová kontrola proti nezávislému Schlyterovu modelu (ten se sám liší až o ~6′) — výsledek ukazuje chip <b>EFEM</b> ve stavové liště. Doporučené jednorázové ověření: JPL Horizons → Observer Table (Moon, tvoje souřadnice) a porovnání s readouty Az/El zde.<br><br>
       <b>Predikce:</b> hrubý sken → zlatý řez na ~0,05 s → kontaktní časy vstup/výstup, trvání tranzitu a tětiva. Nejistota σ vychází ze stáří fixace, stability kurzu, zdroje polohy (ADS-B × MLAT) a zdroje výšky → P(zásah); panel <b>Kalibrace predikce</b> ji škáluje podle skutečně naměřených chyb. Letadla v zatáčce (⟳) se propagují po oblouku — úhlová rychlost se bere z hlášeného <code>track_rate</code> / náklonu, jinak z historie fixací. Stoupání a klesání končí na zvolené hladině (<code>nav_altitude_mcp</code>). Započtena je diferenciální refrakce: cíl se láme celou atmosférou, letadlo jen její částí (≈ 3′ při elevaci 10°).<br><br>
       <b>Data:</b> adsb.lol / adsb.fi přes vlastní proxy <code>/api/aircraft</code> (veřejná API neposílají CORS), s automatickým failoverem a kotvením času na serverové razítko. Proxy vrací jen potřebná pole a filtruje hladiny. Dotazy jsou dvourychlostní: celá zóna zřídka, úzký okruh kolem kandidátů často (při události &lt; 150 s po 1,5 s ⚡). Limit veřejných API ~1 dotaz/s nepřekračuj. Data © přispěvatelé adsb.lol (ODbL) a adsb.fi.<br><br>
-      <b>Nasazení:</b> <code>index.html</code> + serverless funkce <code>api/aircraft.js</code> (Vercel). Z disku (file://) funguje jen SIMULACE. Notifikace, GPS, kompas, Wake Lock a tlačítko Sdílet vyžadují https. <b>Slunce vždy jen s certifikovaným filtrem.</b>
+      <b>Nasazení:</b> <code>index.html</code> + serverless funkce <code>api/aircraft.js</code> (Vercel). Z disku (file://) funguje jen SIMULACE. Notifikace, GPS, kompas, Wake Lock a tlačítko Sdílet vyžadují https. <b>Slunce vždy jen s certifikovaným filtrem.</b><br><br>
+      <b>Mapa:</b> osa tranzitu je „stín" letadla ve směru cíle promítnutý do roviny stanoviště (bez terénu); zelený pás ukazuje, odkud letadlo protne aspoň okraj kotouče. Knihovna Leaflet a dlaždice OpenStreetMap se načítají až po zapnutí mapy.<br><br>
+      <b>Družice:</b> dráha se počítá modelem SGP4 z TLE. Přesnost TLE je řádově kilometr a s časem klesá — hledání opakuj den předem a v den přeletu a výsledek si ověř třeba na transit-finder.com. Výška terénu cílového bodu se nezapočítává.<br><br>
+      <b>Instalace:</b> stránku lze přidat na plochu telefonu (nabídka prohlížeče → Přidat na plochu / Instalovat); poběží celoobrazovkově. Výpočet i tak vyžaduje otevřenou aplikaci a zapnutý displej (Wake Lock se zapíná sám).
     </div>
   </div>
 
@@ -668,6 +728,18 @@ const DATA_SOURCES = [
   { id:'demo',    label:'SIMULACE',              url:null, note:'Syntetický provoz; jeden spoj zaručeně projde kotoučem.' },
 ];
 
+/* Knihovny třetích stran — načítají se líně z CDN, s kontrolou integrity (SRI) */
+const CDN = {
+  leafletJs:  ['https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',  'sha384-cxOPjt7s7Iz04uaHJceBmS+qpjv2JkIHNVcuOrM+YHwZOmJGBXI00mdUXEq65HTH'],
+  leafletCss: ['https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', 'sha384-sHL9NAb7lN7rfvG5lfHpm643Xkcjzp4jFvuavGOndn6pjVqS6ny56CAt3nsEVT4H'],
+  satellite:  ['https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js', 'sha384-e6V1JVpc+kVNTxT0gEOla7yL4c92Romsw7itPoipfzHbEjzUwPhTv6oeVDMHHzqT'],
+};
+/* Družice pro hledání tranzitů: NORAD id, rozpětí [m] pro úhlovou velikost */
+const SATS = [
+  { id:'25544', label:'ISS', span:109 },
+  { id:'48274', label:'Tiangong', span:55 },
+];
+
 const TARGETS = [
   { id:'moon', label:'🌙 Měsíc' },
   { id:'sun',  label:'☀ Slunce' },
@@ -682,6 +754,7 @@ const DEFAULTS = {
   alarmVol:70, alarmThSec:120,
   minSkyEl:5, radarRange:200, fieldHalf:1.5,
   focal:600, pitch:4.35, fps:7, theme:'normal',
+  voiceOn:false, vibOn:true, mapOn:false, issId:'25544', issMaxKm:40,
 };
 
 const LIMITS = { pollMs:{min:1500,max:30000}, refreshMs:{min:250,max:5000} };
@@ -1403,6 +1476,161 @@ function calibStats(recs){
     medAlongS: _med(ok.map(r => Math.abs(r.alongS))) };
 }
 
+/* Posun v lokální tečné rovině (E, N v metrech) → zeměpisné souřadnice (WGS-84) */
+function enuToLL(o, e, n){
+  const sl = sind(o.lat), w2 = 1 - WGS_E2*sl*sl;
+  const M = WGS_A*(1 - WGS_E2)/Math.pow(w2, 1.5), N = WGS_A/Math.sqrt(w2);
+  return [o.lat + n/M*R2D, o.lon + e/(N*cosd(o.lat))*R2D];
+}
+
+/* „Stín" bodu P ve směru cíle (az, el) promítnutý do roviny pozorovatele o.
+   Z tohoto místa je P přesně ve středu cíle. k = šikmá vzdálenost stín→P. */
+function shadowENU(ae, az, el){
+  const mE = sind(az)*cosd(el), mN = cosd(az)*cosd(el), mU = sind(el);
+  const k = ae.u/mU;
+  return { e: ae.e - k*mE, n: ae.n - k*mN, k, mU };
+}
+
+/* Osa tranzitu letadla na zemi kolem času nejtěsnějšího přiblížení:
+   pts = středová čára (bod pro každý čas t), left/right = okraje pásu, odkud letadlo
+   protne aspoň okraj kotouče, foot = bod osy nejbližší stanovišti. Do ~30 km od stanoviště. */
+function transitAxis(a, obs, tr, ageBase){
+  if (a.tHit == null) return null;
+  const span = clamp(9000/Math.max(a.gsMs || 0, 60), 10, 90), dt = span/30;
+  const pts = [];
+  for (let t = Math.max(0, a.tHit - span); t <= a.tHit + span + 1e-9; t += dt){
+    const o = offsetAt(a, t, obs, tr, ageBase);
+    if (o.m.el < 1 || o.ae.u <= 0) continue;
+    const sh = shadowENU(o.ae, o.m.az, o.m.el);
+    if (Math.hypot(sh.e, sh.n) > 30000) continue;
+    const Rd = o.m.diam/2*D2R, ll = enuToLL(obs, sh.e, sh.n);
+    pts.push({ t, e: sh.e, n: sh.n, lat: ll[0], lon: ll[1], az: o.m.az, ra: sh.k*Rd/sh.mU, rb: sh.k*Rd });
+  }
+  if (pts.length < 2) return null;
+  const left = [], right = [];
+  for (let i = 0; i < pts.length; i++){
+    const p = pts[i], q0 = pts[Math.max(0, i - 1)], q1 = pts[Math.min(pts.length - 1, i + 1)];
+    const de = q1.e - q0.e, dn = q1.n - q0.n, L = Math.hypot(de, dn) || 1;
+    const ne = -dn/L, nn = de/L;                               // normála k ose
+    /* stopa kotouče je elipsa: poloosa ra ve směru azimutu cíle, rb kolmo → šířka ve směru normály */
+    const w = Math.hypot(p.ra*(ne*sind(p.az) + nn*cosd(p.az)), p.rb*(ne*cosd(p.az) - nn*sind(p.az)));
+    p.w = w;
+    left.push(enuToLL(obs, p.e + ne*w, p.n + nn*w));
+    right.push(enuToLL(obs, p.e - ne*w, p.n - nn*w));
+  }
+  let foot = null;
+  for (let i = 0; i < pts.length - 1; i++){
+    const p = pts[i], q = pts[i + 1], de = q.e - p.e, dn = q.n - p.n, L2 = de*de + dn*dn;
+    const f = L2 > 0 ? clamp(-(p.e*de + p.n*dn)/L2, 0, 1) : 0;
+    const e = p.e + de*f, n = p.n + dn*f, d = Math.hypot(e, n);
+    if (!foot || d < foot.dist){
+      const ll = enuToLL(obs, e, n);
+      foot = { e, n, dist: d, brg: rev(atan2d(e, n)), t: p.t + (q.t - p.t)*f, w: p.w + (q.w - p.w)*f, lat: ll[0], lon: ll[1] };
+    }
+  }
+  return { pts, left, right, foot };
+}
+
+/* ---------------------- družice (ISS) — čistá geometrie ---------------------- */
+/* Místo, ze kterého je v čase tMs bod P = {lat, lon, hEll} přesně ve středu cíle.
+   Iterace „stín → nový pozorovatel" (kvůli zakřivení Země a paralaxe Měsíce). */
+function alignObserver(obs, P, tMs, target, iters){
+  let o = { lat: obs.lat, lon: obs.lon, hEll: obs.hEll };
+  const d = new Date(tMs);
+  for (let i = 0; i < (iters || 6); i++){
+    const m = targetTopo(d, o.lat, o.lon, o.hEll, target);
+    const ae = aircraftAzEl(o.lat, o.lon, o.hEll, P.lat, P.lon, P.hEll);
+    const el = m.el + diffRefr(m.el, P.hEll - o.hEll);
+    if (el < 1 || ae.u <= 0) return null;
+    const sh = shadowENU(ae, m.az, el);
+    if (!isFinite(sh.e) || Math.hypot(sh.e, sh.n) > 2e6) return null;
+    const ll = enuToLL(o, sh.e, sh.n);
+    o = { lat: ll[0], lon: ll[1], hEll: obs.hEll };
+  }
+  return { lat: o.lat, lon: o.lon, dist: haversine(obs.lat, obs.lon, o.lat, o.lon),
+    brg: bearing(obs.lat, obs.lon, o.lat, o.lon), resid: satSep(o, P, tMs, target).sep };
+}
+
+/* Úhlový odstup bodu P od středu cíle z místa o v čase tMs */
+function satSep(o, P, tMs, target){
+  const m = targetTopo(new Date(tMs), o.lat, o.lon, o.hEll, target);
+  const ae = aircraftAzEl(o.lat, o.lon, o.hEll, P.lat, P.lon, P.hEll);
+  return { sep: angSep(ae.az, ae.el, m.az, m.el + diffRefr(m.el, P.hEll - o.hEll)), ae, m };
+}
+
+/* Hledání blízkých průchodů družice u Měsíce/Slunce. satFn(ms) → {lat, lon, hEll} | null.
+   Hrubý sken (2 s nad obzorem, 30 s hluboko pod ním) → zlatý řez → nejbližší bod osy. */
+function satFindEvents(satFn, obs, t0, days, maxSepDeg, spanM){
+  const raw = [], end = t0 + days*86400000;
+  let best = {}, inPass = false, t = t0;
+  const flush = () => { for (const k in best) raw.push(best[k]); best = {}; };
+  while (t < end){
+    const P = satFn(t);
+    const ae = P && aircraftAzEl(obs.lat, obs.lon, obs.hEll, P.lat, P.lon, P.hEll);
+    if (!ae || ae.el < 5){
+      if (inPass){ flush(); inPass = false; }
+      t += (ae && ae.el > -10) ? 4000 : 30000;
+      continue;
+    }
+    inPass = true;
+    for (const k of ['moon', 'sun']){
+      const m = targetTopo(new Date(t), obs.lat, obs.lon, obs.hEll, k);
+      if (m.el < 3) continue;
+      const sp = angSep(ae.az, ae.el, m.az, m.el);
+      if (sp < maxSepDeg + 4 && (!best[k] || sp < best[k].sep)) best[k] = { target: k, t, sep: sp };
+    }
+    t += 2000;
+  }
+  flush();
+  const out = [];
+  for (const c of raw){
+    const f = ms => { const P = satFn(ms); return P ? satSep(obs, P, ms, c.target).sep : 99; };
+    const r = refineMin(f, c.t - 2500, c.t + 2500, 30);
+    if (!(r.v <= maxSepDeg)) continue;
+    const P = satFn(r.t), s0 = satSep(obs, P, r.t, c.target);
+    /* relativní úhlová rychlost a trvání průchodu středem */
+    const dt = 200, Pa = satFn(r.t - dt), Pb = satFn(r.t + dt);
+    const sa = satSep(obs, Pa, r.t - dt, c.target), sb = satSep(obs, Pb, r.t + dt, c.target);
+    const cE = cosd(s0.m.el);
+    const om = Math.hypot((wrap180(sb.ae.az - sa.ae.az) - wrap180(sb.m.az - sa.m.az))*cE,
+                          (sb.ae.el - sa.ae.el) - (sb.m.el - sa.m.el))/(2*dt/1000);
+    /* nejbližší bod osy: osa = stíny v čase ±1 s, pata kolmice od stanoviště; osa je
+       zakřivená, proto se krok několikrát opakuje kolem nově nalezeného času */
+    const kx = 111320*cosd(obs.lat), ky = 111320;
+    let tAx = r.t, A = null, B = null, okAx = true;
+    for (let it = 0; it < 4; it++){
+      A = alignObserver(obs, satFn(tAx - 1000), tAx - 1000, c.target);
+      B = alignObserver(obs, satFn(tAx + 1000), tAx + 1000, c.target);
+      if (!A || !B){ okAx = false; break; }
+      const ax = (A.lon - obs.lon)*kx, ay = (A.lat - obs.lat)*ky, bx = (B.lon - obs.lon)*kx, by = (B.lat - obs.lat)*ky;
+      const L2 = (bx - ax)**2 + (by - ay)**2;
+      const fr = L2 > 0 ? -(ax*(bx - ax) + ay*(by - ay))/L2 : 0.5;
+      const step = clamp((fr - 0.5)*2000, -30000, 30000);
+      tAx += step;
+      if (Math.abs(step) < 20) break;
+    }
+    if (!okAx) continue;
+    const al = alignObserver(obs, satFn(tAx), tAx, c.target);
+    if (!al) continue;
+    const sun = c.target === 'sun' ? s0.m : targetTopo(new Date(r.t), obs.lat, obs.lon, obs.hEll, 'sun');
+    out.push({ target: c.target, t: r.t, sep: r.v, R: s0.m.diam/2, el: s0.ae.el, az: s0.ae.az, distKm: s0.ae.dist/1000,
+      sizeArcsec: spanM ? spanM/s0.ae.dist*R2D*3600 : null, omega: om, dur: om > 0 ? s0.m.diam/om : null,
+      bandKm: s0.m.diam*D2R*s0.ae.dist/1000, axisBrg: bearing(A.lat, A.lon, B.lat, B.lon),
+      phase: c.target === 'moon' ? s0.m.phaseFrac : null, sunEl: sun.el, align: { ...al, t: tAx } });
+  }
+  return out.sort((x, y) => x.t - y.t);
+}
+
+/* Obal nad satellite.js: satrec → funkce polohy (WGS-84) */
+function makeSatFn(lib, satrec){
+  return ms => {
+    const d = new Date(ms), pv = lib.propagate(satrec, d);
+    if (!pv || !pv.position || typeof pv.position !== 'object' || !isFinite(pv.position.x)) return null;
+    const g = lib.eciToGeodetic(pv.position, lib.gstime(d));
+    return { lat: g.latitude*R2D, lon: wrap180(g.longitude*R2D), hEll: g.height*1000 };
+  };
+}
+
 /* Analytická naváděcí korekce: nejmenší čtverce v horizontální rovině.
    Minimalizuje |P(r − δ)|, P = projekce ⊥ směru cíle m; δ = a·Ê + b·N̂.
    Dvě iterace bohatě stačí (problém je téměř lineární). */
@@ -2017,6 +2245,8 @@ const S = {
   polling:false, errCount:0, backoffUntil:0,
   lastWideMs:0, wideKey:'', lastKind:'wide',
   calPend:new Map(), calSeen:new Map(),
+  voiceOn:DEFAULTS.voiceOn, vibOn:DEFAULTS.vibOn, lastVoiceKey:null,
+  mapOn:DEFAULTS.mapOn, issId:DEFAULTS.issId,
 };
 
 /* ----------------------------- úložiště ----------------------------- */
@@ -2073,6 +2303,24 @@ function playAlarm(){
 }
 function stopAlarmAudio(){ if (alarmInt){ clearInterval(alarmInt); alarmInt = null; } }
 
+/* Hlas (Web Speech) a vibrace — obojí volitelné, tiše se přeskočí, když chybí podpora */
+function say(text){
+  if (!S.voiceOn || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'cs-CZ'; u.rate = 1.15; u.volume = clamp((+$('alarmVol').value || 70)/100, 0, 1);
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch(e){}
+}
+function buzz(pattern){ if (S.vibOn && navigator.vibrate){ try { navigator.vibrate(pattern); } catch(e){} } }
+const plural = (n, one, few, many) => n + ' ' + (n === 1 ? one : (n >= 2 && n <= 4 ? few : many));
+function sayRel(sec){
+  sec = Math.max(0, Math.round(sec));
+  const m = Math.floor(sec/60), s2 = sec % 60;
+  return ((m ? plural(m, 'minutu', 'minuty', 'minut') + ' ' : '') + (s2 || !m ? plural(s2, 'sekundu', 'sekundy', 'sekund') : '')).trim();
+}
+const spellCs = cs => String(cs).split('').join(' ');
+
 /* --------------------------- notifikace --------------------------- */
 function updateNotifStatus(){
   const elx = $('notifStatus');
@@ -2104,6 +2352,8 @@ function triggerAlarm(ac){
     ' · Hladina: <b>' + Math.round(ac.altMsl) + ' m</b>';
   $('alarm').classList.add('show');
   playAlarm();
+  buzz([300, 120, 300, 120, 600]);
+  say('Přelet. ' + spellCs(ac.cs) + '. Za ' + sayRel(ac.tHit) + '.');
   sendBrowserNotif((S.target === 'sun' ? '☀' : '🌕') + ' PŘELET — ' + ac.cs,
     'Za ' + fmtRel(ac.tHit) + ' · odstup ' + ac.sep.toFixed(3) + '° · P ' + (ac.p != null ? Math.round(ac.p*100) + '%' : '—'));
 }
@@ -2331,7 +2581,7 @@ function drawDiscAndList(tgt, hits, opt, obs, preview){
       (a.dur ? ('tětiva ' + Math.round((a.chordFrac || 0)*100) + ' % ⌀ · trvání <b class="ok">' + a.dur.toFixed(1) + ' s</b> · ') : '') +
       'silueta ' + sil + '</div>' +
       '<div class="tt"><div class="rel">' + fmtRel(a.tHit) + '</div><div class="abs">' + fmtClock(when, true) + '</div></div>';
-    row.onclick = () => { S.selected = S.selected === a.cs ? null : a.cs; draw(); };
+    row.onclick = () => { S.selected = S.selected === a.cs ? null : a.cs; draw(); drawMap(); };
     wrap.appendChild(row);
   }
 }
@@ -2367,7 +2617,7 @@ function drawTable(hits, opt){
       '<td>' + (a.p != null ? Math.round(a.p*100) + '%' : '—') + '</td>' +
       '<td>' + (a.dur ? a.dur.toFixed(1) + 's' : '—') + '</td>' +
       '<td>' + badge + '</td>';
-    tr.onclick = () => { S.selected = S.selected === a.cs ? null : a.cs; draw(); };
+    tr.onclick = () => { S.selected = S.selected === a.cs ? null : a.cs; draw(); drawMap(); };
     tb.appendChild(tr);
   }
 }
@@ -2510,7 +2760,7 @@ async function poll(){
   refresh();
   S.nextPoll = Math.round(effPollMs()/1000);
 }
-function refresh(){ compute(); draw(); }
+function refresh(){ compute(); draw(); drawMap(); }
 function redrawStatic(){
   if (S.running){ draw(); return; }
   if (document.hidden) return;
@@ -2631,9 +2881,17 @@ function fieldTick(){
     const sec = Math.ceil(rem);
     if (sec !== S.lastBeepSec){
       S.lastBeepSec = sec;
-      if (rem <= 0.3) beep(1568, 0.5);
-      else if (rem <= 3) beep(1320, 0.07);
+      if (rem <= 0.3){ beep(1568, 0.5); buzz(500); }
+      else if (rem <= 3){ beep(1320, 0.07); buzz(60); }
       else beep(880, 0.08);
+    }
+  }
+  /* hlasové mezníky — hrubé, přesné vteřiny hlídá pípání výše */
+  if (ev.hit){
+    const mark = [60, 30, 20, 10, 5].find(mk => rem <= mk && rem > mk - 1.2);
+    if (mark){
+      const key = (a.hex || a.cs) + ':' + mark;
+      if (key !== S.lastVoiceKey){ S.lastVoiceKey = key; say(mark === 60 ? 'Minuta.' : sayRel(mark) + '.'); }
     }
   }
   const co = S.navOn ? correctionFor(a, S.obs || readObs(), S.track) : null;
@@ -2650,6 +2908,212 @@ function fieldTick(){
   const others = S.enriched.filter(x => x.refined && x !== a && x.sep != null && x.sep < 1.5).slice(0, 2);
   $('fldNext').innerHTML = others.length ? ('Další: ' + others.map(x =>
     '<b>' + x.cs + '</b> ' + fmtRel((x.tHit ?? 0) - nowOff) + ' (' + x.sep.toFixed(2) + '°)').join(' · ')) : '';
+}
+
+/* ------------------------- líné načítání knihoven ------------------------- */
+const _libs = {};
+function loadScript(src, integrity){
+  if (_libs[src]) return _libs[src];
+  _libs[src] = new Promise((res, rej) => {
+    const el0 = document.createElement('script');
+    el0.src = src; el0.async = true;
+    if (integrity){ el0.integrity = integrity; el0.crossOrigin = 'anonymous'; }
+    el0.onload = () => res();
+    el0.onerror = () => { delete _libs[src]; rej(new Error('nepodařilo se načíst ' + src.split('/').pop())); };
+    document.head.appendChild(el0);
+  });
+  return _libs[src];
+}
+function loadCss(href, integrity){
+  if (_libs[href]) return;
+  _libs[href] = true;
+  const l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = href;
+  if (integrity){ l.integrity = integrity; l.crossOrigin = 'anonymous'; }
+  document.head.appendChild(l);
+}
+
+/* ------------------------------- mapa ------------------------------- */
+const MAP = { map:null, layer:null, loading:false, fitKey:'', bounds:null, infoHtml:'', sat:null };
+const mapLinks = (lat, lon) => {
+  const q = lat.toFixed(6) + ',' + lon.toFixed(6);
+  return '<a href="https://www.google.com/maps/search/?api=1&query=' + q + '" target="_blank" rel="noopener">Google</a> · ' +
+         '<a href="https://mapy.cz/zakladni?q=' + q + '" target="_blank" rel="noopener">Mapy.cz</a>';
+};
+async function mapEnsure(){
+  if (MAP.map || MAP.loading) return;
+  MAP.loading = true;
+  $('mapInfo').textContent = 'Načítám mapu…';
+  try {
+    loadCss(CDN.leafletCss[0], CDN.leafletCss[1]);
+    await loadScript(CDN.leafletJs[0], CDN.leafletJs[1]);
+    const o = readObs();
+    MAP.map = L.map('map', { zoomControl:true }).setView([isNaN(o.lat) ? 50 : o.lat, isNaN(o.lon) ? 14.4 : o.lon], 14);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19,
+      attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>' }).addTo(MAP.map);
+    L.control.scale({ imperial:false }).addTo(MAP.map);
+    MAP.layer = L.layerGroup().addTo(MAP.map);
+    drawMap();
+  } catch(e){
+    $('mapInfo').textContent = 'Mapu se nepodařilo načíst (' + (e && e.message || e) + '). Zkontroluj připojení.';
+  } finally { MAP.loading = false; }
+}
+function setMapOn(on){
+  S.mapOn = !!on;
+  $('mapOn').checked = S.mapOn;
+  $('mapWrap').style.display = S.mapOn ? '' : 'none';
+  $('mapHint').style.display = S.mapOn ? 'none' : '';
+  if (S.mapOn){
+    mapEnsure().then(() => { if (MAP.map){ MAP.map.invalidateSize(); drawMap(); } });
+  }
+}
+function drawMap(){
+  if (!S.mapOn || !MAP.map || document.hidden) return;
+  const obs = S.obs || readObs();
+  if (isNaN(obs.lat) || isNaN(obs.lon)) return;
+  MAP.layer.clearLayers();
+  const pts = [[obs.lat, obs.lon]];
+  L.circleMarker([obs.lat, obs.lon], { radius:7, color:PAL.red, weight:2, fillColor:PAL.red, fillOpacity:.5 })
+    .bindTooltip('Stanoviště').addTo(MAP.layer);
+  let info = S.running ? 'Žádný kandidát do 2° — osa se zakreslí, až se nějaký objeví.' : 'Spusť sledování — zakreslí se osa tranzitu kandidátů.';
+  const cands = S.track ? S.enriched.filter(a => a.refined && a.sep != null && a.sep <= 2 && a.predEl > 0 && a.tHit != null).slice(0, 5) : [];
+  const main = cands.find(a => a.cs === S.selected) || cands[0];
+  const ageOf = a => a.seenPos + (S.lastComputeMs - S.anchorMs)/1000;
+  for (const a of cands){
+    const ax = transitAxis(a, obs, S.track, ageOf(a));
+    if (!ax) continue;
+    const isMain = a === main;
+    if (isMain) L.polygon([...ax.left, ...ax.right.slice().reverse()], { stroke:false, fillColor:PAL.hit, fillOpacity:.22 }).addTo(MAP.layer);
+    L.polyline(ax.pts.map(p => [p.lat, p.lon]), { color: isMain ? PAL.amber : PAL.cand, weight: isMain ? 3 : 1.5,
+      opacity: isMain ? 1 : .6, dashArray: isMain ? null : '5 5' }).bindTooltip(a.cs).addTo(MAP.layer);
+    if (isMain && ax.foot){
+      const f = ax.foot, inside = f.dist <= f.w;
+      L.polyline([[obs.lat, obs.lon], [f.lat, f.lon]], { color:PAL.txt, weight:1.5, dashArray:'3 5' }).addTo(MAP.layer);
+      L.circleMarker([f.lat, f.lon], { radius:6, color:PAL.hit, weight:2, fillColor:PAL.hit, fillOpacity:.7 })
+        .bindTooltip('Nejbližší bod osy').addTo(MAP.layer);
+      pts.push([f.lat, f.lon]);
+      for (const p of ax.pts) if (Math.hypot(p.e - f.e, p.n - f.n) < 2500) pts.push([p.lat, p.lon]);
+      info = '<b>' + a.cs + '</b> · ' + (inside ? '<span style="color:var(--green)">stojíš v pásu</span> · ' : '') +
+        'osa <b>' + Math.round(f.dist) + ' m</b> ' + compass(f.brg) + ' (' + Math.round(f.brg) + '°) · pás ±' + Math.round(f.w) + ' m · průchod ' +
+        fmtClock(new Date(S.lastComputeMs + f.t*1000), true) + ' · ' + mapLinks(f.lat, f.lon);
+    }
+  }
+  if (MAP.sat && MAP.sat.line.length > 1){
+    L.polyline(MAP.sat.line, { color:PAL.plane, weight:3 }).bindTooltip(MAP.sat.label).addTo(MAP.layer);
+    L.circleMarker(MAP.sat.near, { radius:6, color:PAL.plane, weight:2, fillColor:PAL.plane, fillOpacity:.7 })
+      .bindTooltip(MAP.sat.label + ' — nejbližší bod osy').addTo(MAP.layer);
+    if (!main) info = '<b>' + MAP.sat.label + '</b> · osa družice (modře) · ' + mapLinks(MAP.sat.near[0], MAP.sat.near[1]);
+  }
+  /* odkazy v patičce nepřepisuj zbytečně — přepsání uprostřed klepnutí by ho zahodilo */
+  const stable = info.replace(/průchod [\d:.]+/, '');
+  if (stable !== MAP.infoHtml){ MAP.infoHtml = stable; $('mapInfo').innerHTML = info; }
+  MAP.bounds = pts;
+  /* automaticky přiblížit jen při změně hlavního kandidáta — jinak nech mapu, jak si ji uživatel nastavil */
+  const fitKey = main ? (main.hex || main.cs) : '';
+  if (fitKey && fitKey !== MAP.fitKey && pts.length > 1){ MAP.fitKey = fitKey; mapFit(); }
+}
+function mapFit(){
+  if (!MAP.map) return;
+  const all = (MAP.bounds || []).concat(MAP.sat && !(MAP.bounds && MAP.bounds.length > 1) ? MAP.sat.line : []);
+  if (all.length > 1) MAP.map.fitBounds(all, { padding:[30, 30], maxZoom:16 });
+  else { const o = readObs(); if (!isNaN(o.lat)) MAP.map.setView([o.lat, o.lon], 14); }
+}
+
+/* ------------------------------ družice ------------------------------ */
+const ISS = { events:[], satFn:null, sat:null, tleAgeDays:null, busy:false };
+function buildSatSeg(){
+  const seg = $('issSeg'); seg.innerHTML = '';
+  SATS.forEach(x => {
+    const b = document.createElement('button');
+    b.textContent = x.label;
+    if (x.id === S.issId) b.classList.add('on');
+    b.onclick = () => {
+      seg.querySelectorAll('button').forEach(y => y.classList.remove('on'));
+      b.classList.add('on'); S.issId = x.id; persistSoon();
+    };
+    seg.appendChild(b);
+  });
+}
+async function issSearch(){
+  if (ISS.busy) return;
+  const obs = readObs(), st = $('issStatus');
+  if (isNaN(obs.lat) || isNaN(obs.lon)){ st.textContent = 'Nejdřív zadej souřadnice stanoviště.'; return; }
+  const sat = SATS.find(x => x.id === S.issId) || SATS[0];
+  ISS.busy = true; $('issGo').disabled = true;
+  try {
+    st.textContent = 'Stahuji dráhové elementy ' + sat.label + '…';
+    await loadScript(CDN.satellite[0], CDN.satellite[1]);
+    const res = await fetch('/api/tle?id=' + sat.id);
+    if (!res.ok) throw new Error('TLE: HTTP ' + res.status);
+    const tle = await res.json();
+    const rec = satellite.twoline2satrec(tle.l1, tle.l2);
+    ISS.satFn = makeSatFn(satellite, rec); ISS.sat = sat;
+    ISS.tleAgeDays = (Date.now() - (rec.jdsatepoch - 2440587.5)*86400000)/86400000;
+    if (!ISS.satFn(Date.now())) throw new Error('TLE nelze propagovat');
+    st.textContent = 'Počítám průlety na 10 dní…';
+    await new Promise(r => setTimeout(r, 30));           // ať se stihne překreslit stav
+    const maxKm = clamp(num($('issMaxKm').value) || DEFAULTS.issMaxKm, 1, 300);
+    ISS.events = satFindEvents(ISS.satFn, obs, Date.now(), 10, 10, sat.span).filter(e => e.align.dist <= maxKm*1000);
+    ISS.obs = obs;
+    renderIss(maxKm);
+  } catch(e){
+    st.innerHTML = '<span style="color:#ffb3b3">Hledání selhalo: ' + escapeHtml(e && e.message || e) +
+      (location.protocol === 'file:' ? ' — funkce vyžaduje nasazení s proxy /api/tle.' : '') + '</span>';
+  } finally { ISS.busy = false; $('issGo').disabled = false; }
+}
+function renderIss(maxKm){
+  const st = $('issStatus'), tb = $('issRows'), sat = ISS.sat;
+  const age = ISS.tleAgeDays;
+  st.innerHTML = sat.label + ': <b>' + ISS.events.length + '</b> ' + (ISS.events.length === 1 ? 'událost' : (ISS.events.length >= 2 && ISS.events.length <= 4 ? 'události' : 'událostí')) +
+    ' do ' + maxKm + ' km na příštích 10 dní · stáří TLE ' + age.toFixed(1) + ' d' +
+    (age > 3 ? ' <span style="color:#ffb3b3">⚠ staré elementy</span>' : '') +
+    '. Čím dál v budoucnu, tím hrubší odhad — hledání zopakuj den předem a v den přeletu.' +
+    (ISS.events.some(e => e.target === 'sun') ? ' <b>Slunce jen s filtrem před objektivem.</b>' : '');
+  $('issTbl').style.display = ISS.events.length ? '' : 'none';
+  tb.innerHTML = '';
+  ISS.events.forEach((e, i) => {
+    const here = e.sep < e.R, d = new Date(e.t);
+    const tr = document.createElement('tr');
+    if (here) tr.className = 'here';
+    tr.innerHTML =
+      '<td>' + d.toLocaleDateString('cs', { weekday:'short', day:'numeric', month:'numeric' }) + '<small>' + fmtClock(d, true) + '</small></td>' +
+      '<td>' + (e.target === 'sun' ? '☀ Slunce' : '☽ Měsíc' + (e.phase != null ? '<small>' + Math.round(e.phase*100) + ' % · Slunce ' + e.sunEl.toFixed(0) + '°</small>' : '')) + '</td>' +
+      '<td>' + (here ? '<b style="color:var(--green)">zůstaň</b>' : (e.align.dist/1000).toFixed(1) + ' km ' + compass(e.align.brg)) + '<small>' + e.align.lat.toFixed(5) + ', ' + e.align.lon.toFixed(5) + '</small></td>' +
+      '<td><button class="btn ghost mini" data-act="map">🗺 Mapa</button><button class="btn ghost mini" data-act="use">⌖ Použít</button></td>' +
+      '<td class="sep" style="color:' + (here ? 'var(--green)' : 'var(--txt)') + '">' + (here ? 'PŘELET ' : '') + e.sep.toFixed(2) + '°</td>' +
+      '<td>' + e.el.toFixed(0) + '°<small>az ' + Math.round(e.az) + '° ' + compass(e.az) + '</small></td>' +
+      '<td>' + Math.round(e.distKm) + ' km<small>' + (e.sizeArcsec ? e.sizeArcsec.toFixed(0) + '″ · pás ' + e.bandKm.toFixed(1) + ' km' : '') + '</small></td>' +
+      '<td>' + (e.dur ? e.dur.toFixed(2) + ' s' : '—') + '</td>';
+    tr.querySelector('[data-act=map]').onclick = () => issShowOnMap(i);
+    tr.querySelector('[data-act=use]').onclick = () => issUse(i);
+    tb.appendChild(tr);
+  });
+}
+/* Osa družice na mapě: stíny v ±8 s kolem události (desítky km) */
+function issShowOnMap(i){
+  const e = ISS.events[i]; if (!e || !ISS.satFn) return;
+  const line = [];
+  for (let k = -8; k <= 8; k++){
+    const tt = e.align.t + k*1000, a = alignObserver(ISS.obs, ISS.satFn(tt), tt, e.target);
+    if (a) line.push([a.lat, a.lon]);
+  }
+  MAP.sat = { line, near:[e.align.lat, e.align.lon],
+    label: ISS.sat.label + ' ' + (e.target === 'sun' ? '☀' : '☽') + ' ' + new Date(e.t).toLocaleDateString('cs', { day:'numeric', month:'numeric' }) + ' ' + fmtClock(new Date(e.t)) };
+  MAP.infoHtml = '';
+  setMapOn(true);
+  const fit = () => { if (MAP.map){ drawMap(); MAP.map.fitBounds(line.concat([[ISS.obs.lat, ISS.obs.lon]]), { padding:[30, 30] }); } };
+  mapEnsure().then(fit); fit();
+  try { $('mapPanel').scrollIntoView({ behavior:'smooth', block:'center' }); } catch(err){}
+}
+/* Uloží bod osy jako pojmenovanou pozici a přepne na něj stanoviště */
+function issUse(i){
+  const e = ISS.events[i]; if (!e) return;
+  const d = new Date(e.t);
+  const name = ISS.sat.label + ' ' + (e.target === 'sun' ? '☀' : '☽') + ' ' + d.toLocaleDateString('cs', { day:'numeric', month:'numeric' }) + ' ' + fmtClock(d);
+  $('lat').value = e.align.lat.toFixed(6); $('lon').value = e.align.lon.toFixed(6);
+  store.addPosition({ name, lat:$('lat').value, lon:$('lon').value, elev:$('elev').value, geoid:$('geoid').value });
+  renderPosList(); onLocationChanged(); persistSoon();
+  $('issStatus').innerHTML = 'Stanoviště přepnuto na bod osy a uloženo jako „' + escapeHtml(name) + '". Nadmořskou výšku nového místa uprav ručně.';
 }
 
 /* ------------------------------- téma ------------------------------- */
@@ -2691,6 +3155,7 @@ function saveCurrentSettings(){
     alarmVol:$('alarmVol').value, alarmTh:$('alarmTh').value,
     radarRange:$('radarRange').value,
     focal:$('focal').value, pitch:$('pitch').value, fps:$('fps').value,
+    voiceOn:S.voiceOn, vibOn:S.vibOn, mapOn:S.mapOn, issId:S.issId, issMaxKm:$('issMaxKm').value,
   });
   try {
     const u = new URL(location.href);
@@ -2716,6 +3181,11 @@ function applySettings(s){
   if (s.fieldHalf && [0.75, 1.5, 3].includes(+s.fieldHalf)) S.fieldHalf = +s.fieldHalf;
   if (s.pollMs) S.pollMs = clamp(+s.pollMs, LIMITS.pollMs.min, LIMITS.pollMs.max);
   if (s.refreshMs) S.refreshMs = clamp(+s.refreshMs, LIMITS.refreshMs.min, LIMITS.refreshMs.max);
+  if (typeof s.voiceOn === 'boolean') S.voiceOn = s.voiceOn;
+  if (typeof s.vibOn === 'boolean') S.vibOn = s.vibOn;
+  if (typeof s.mapOn === 'boolean') S.mapOn = s.mapOn;
+  if (s.issId && SATS.some(x => x.id === s.issId)) S.issId = s.issId;
+  set('issMaxKm', s.issMaxKm);
 }
 function applyUrlParams(){
   try {
@@ -2817,6 +3287,7 @@ function onLocationChanged(){
   updateZoneReadout();
   updateTrajectory();
   redrawStatic();
+  drawMap();
 }
 let _locT = null;
 function locSoon(){ clearTimeout(_locT); _locT = setTimeout(onLocationChanged, 250); }
@@ -2915,7 +3386,9 @@ $('stop').onclick = stop;
 $('fieldBtn').onclick = openField;
 $('fldExit').onclick = closeField;
 $('fldRed').onclick = () => setTheme(S.theme === 'red' ? 'normal' : 'red');
-$('fldTest').onclick = () => beep(1100, 0.15);
+$('fldTest').onclick = () => { beep(1100, 0.15); buzz(120); say('Zkouška hlasu.'); };
+$('voiceOn').addEventListener('change', e => { S.voiceOn = e.target.checked; persistSoon(); if (S.voiceOn) say('Hlas zapnut.'); });
+$('vibOn').addEventListener('change', e => { S.vibOn = e.target.checked; persistSoon(); buzz(80); });
 $('shareBtn').onclick = shareUrl;
 
 $('preview').addEventListener('input', e => {
@@ -2926,6 +3399,11 @@ $('prevReset').onclick = () => {
   $('preview').value = 0; S.previewMin = 0; syncLabels();
   if (S.running) draw(); else redrawStatic();
 };
+
+$('mapOn').addEventListener('change', e => { setMapOn(e.target.checked); persistSoon(); });
+$('mapFit').onclick = mapFit;
+$('issGo').onclick = issSearch;
+$('issMaxKm').addEventListener('input', persistSoon);
 
 $('calibCsv').onclick = calibExport;
 $('calibClear').onclick = () => { CAL.recs = []; CAL.k = 1; calibSave(); renderCalib(); };
@@ -3043,6 +3521,9 @@ function init(){
   renderPosList();
   updateNotifStatus();
   calibLoad(); renderCalib();
+  buildSatSeg();
+  $('voiceOn').checked = S.voiceOn; $('vibOn').checked = S.vibOn;
+  if (S.mapOn) setMapOn(true);
 
   S.selfTest = ephemSelfTest();
   const chip = $('modelChip');
