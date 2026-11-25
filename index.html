@@ -86,7 +86,8 @@ h1 span{color:var(--amber)}
 .launch-mini{padding:9px 12px;font-size:11px;letter-spacing:1px;width:auto;margin:0}
 @media(max-width:700px){
   .launch{flex-direction:column;align-items:stretch;gap:10px;padding:10px 12px}
-  .launch-src{flex-direction:column;align-items:stretch;gap:6px;min-width:0}
+  .launch-src{flex-direction:column;align-items:stretch;gap:6px;min-width:0;flex:none!important}   /* inline flex-basis 260px by ve sloupci roztáhl blok do výšky */
+  .launch .seg.compact{flex:none}
   .launch-actions{width:100%}.launch-go,.launch-stop{flex:1;min-width:0}
 }
 
