@@ -4,6 +4,14 @@ Webová aplikace pro **predikci přeletů letadel a družic přes kotouč Měsí
 
 > **Slunce vždy jen s certifikovaným slunečním filtrem před objektivem.**
 
+**▶ Živé demo: [plane-moon-transit.vercel.app](https://plane-moon-transit.vercel.app)** — bez živých dat jde vyzkoušet přepínačem **SIMULACE**.
+
+| Pohled na disk Slunce (simulace) | Detekovaný přelet | Mobil |
+|---|---|---|
+| ![Pohled na disk](docs/screenshots/luna-desktop.webp) | ![Alarm přeletu](docs/screenshots/luna-alarm-desktop.webp) | ![Mobilní zobrazení](docs/screenshots/luna-mobile.webp) |
+
+**Stack:** HTML + CSS + JavaScript v jednom souboru (bez frameworku a buildu) · Vercel Functions (Node.js) jako proxy · Leaflet + OpenStreetMap · satellite.js (SGP4) · PWA · testy node:test + jsdom · GitHub Actions
+
 ---
 
 ## 📁 Struktura
@@ -99,3 +107,15 @@ Testy načtou `index.html` do jsdom a ověřují výpočetní funkce (refrakce, 
 Souřadnice, nastavení, uložené pozice i kalibrační vzorky zůstávají v `localStorage` prohlížeče. Na server odchází jen střed a poloměr dotazované zóny (proxy → ADS-B zdroj).
 
 Data letadel © přispěvatelé adsb.lol (ODbL) a adsb.fi. Mapové podklady © přispěvatelé OpenStreetMap.
+
+---
+
+## 🤖 Jak vzniklo
+
+Aplikaci jsem postavil s **Claude Code**. Výpočetní jádro (efemeridy podle Meeuse, predikce dráhy, refrakce, nejistota) je pokryté headless testy v `tests/`, které běží v GitHub Actions při každém pushi (`.github/workflows/test.yml`). Nasazení na Vercel je automatické z `main`.
+
+---
+
+## 📄 Licence
+
+[MIT](LICENSE) © 2026 Pavel Procházka
